@@ -61,7 +61,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           <p className="font-medium">
             {data.project 
               ? `${data.project.name} (${data.project.contractNumber})` 
-              : "Not selected"}
+              : "3096 (test)"}
           </p>
         </div>
         <div>
@@ -179,7 +179,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           <div>
             <p className="text-sm text-neutral-textLight">Requested By:</p>
             <p className="font-medium">
-              {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}` : "Current User"}
+              {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email : "David Miguel"}
             </p>
             <p className="text-xs text-neutral-textLight">
               {data.user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}

@@ -306,8 +306,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const items = await storage.getRequisitionItems(requisition.id);
+      const project = requisition.projectId ? await storage.getProject(requisition.projectId) : null;
+      const supplier = requisition.supplierId ? await storage.getSupplier(requisition.supplierId) : null;
+      const user = requisition.requestedById ? await storage.getUser(requisition.requestedById) : null;
       
-      res.json({ ...requisition, items });
+      res.json({
+        ...requisition,
+        items,
+        project,
+        supplier,
+        user
+      });
     } catch (error) {
       console.error("Error fetching requisition:", error);
       res.status(500).json({ message: "Failed to fetch requisition" });
