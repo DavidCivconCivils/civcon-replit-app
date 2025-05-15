@@ -416,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid requisition ID" });
       }
       
-      const { status, poNumber } = req.body;
+      const { status, poNumber, rejectionReason } = req.body;
       if (!status || !['pending', 'approved', 'rejected', 'cancelled'].includes(status)) {
         return res.status(400).json({ message: "Invalid status value" });
       }
@@ -426,13 +426,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Purchase Order number is required for approval" });
       }
       
+      // If rejecting, require a reason
+      if (status === 'rejected' && !rejectionReason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
       const requisition = await storage.getRequisition(id);
       if (!requisition) {
         return res.status(404).json({ message: "Requisition not found" });
       }
       
-      // Update requisition status
-      const updatedRequisition = await storage.updateRequisition(id, { status });
+      // Update requisition status (and rejection reason if applicable)
+      const updateData: any = { status };
+      if (status === 'rejected' && rejectionReason) {
+        updateData.rejectionReason = rejectionReason;
+      }
+      
+      const updatedRequisition = await storage.updateRequisition(id, updateData);
       
       // If approved, create a purchase order
       if (status === 'approved') {
@@ -534,17 +544,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (status === 'rejected') {
         // Send email notification about rejection
-        const userId = req.user.claims.sub;
+        const userId = req.user.id || req.user.claims?.sub;
         const user = await storage.getUser(userId);
         const requester = await storage.getUser(requisition.requestedById);
         const project = await storage.getProject(requisition.projectId);
         
         if (requester && project && user) {
-          // Send rejection email to requester
+          // Send rejection email to requester with reason
           await sendEmail({
             to: requester.email || 'requester@example.com',
             subject: `Your Requisition ${requisition.requisitionNumber} has been rejected`,
-            text: `Your purchase requisition (${requisition.requisitionNumber}) has been rejected.`,
+            text: `Your purchase requisition (${requisition.requisitionNumber}) has been rejected. Reason: ${rejectionReason}`,
             html: `
               <h1>Requisition Rejected</h1>
               <p>Dear ${requester.firstName || 'User'},</p>
@@ -554,7 +564,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <li><strong>Project:</strong> ${project.name}</li>
                 <li><strong>Total Amount:</strong> $${requisition.totalAmount}</li>
               </ul>
-              <p>Please contact the finance department if you need more information.</p>
+              <p><strong>Reason for rejection:</strong> ${rejectionReason}</p>
+              <p>If you need any clarification, please contact the finance department.</p>
               <p>Regards,<br>Civcon Office</p>
             `
           });

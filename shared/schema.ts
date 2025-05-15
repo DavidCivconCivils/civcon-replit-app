@@ -80,6 +80,7 @@ export const requisitions = pgTable("requisitions", {
   deliveryAddress: text("delivery_address").notNull(),
   deliveryInstructions: text("delivery_instructions"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
