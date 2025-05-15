@@ -154,12 +154,31 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt for:", req.body.email);
+    
     passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
+      if (err) {
+        console.error("Authentication error:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Authentication failed:", info?.message);
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      }
+      
+      console.log("User authenticated successfully:", user.id);
       
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Login error:", err);
+          return next(err);
+        }
+        
+        console.log("User logged in, session established");
+        console.log("Session ID:", req.sessionID);
+        console.log("Session data:", req.session);
+        
         // Don't send password back to client
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
@@ -179,6 +198,39 @@ export function setupAuth(app: Express) {
     // Don't send password back to client
     const { password, ...userWithoutPassword } = req.user as SelectUser;
     res.json(userWithoutPassword);
+  });
+  
+  // Debug endpoint to create a test user
+  app.post("/api/create-test-user", async (req, res) => {
+    try {
+      // Check if we already have a test user
+      const existingUser = await storage.getUserByEmail("test@example.com");
+      if (existingUser) {
+        return res.json({ message: "Test user already exists", user: { email: existingUser.email } });
+      }
+      
+      // Create a test user if not exists
+      const hashedPassword = await hashPassword("password123");
+      const id = crypto.randomUUID();
+      
+      const user = await storage.createUser({
+        id,
+        email: "test@example.com",
+        password: hashedPassword,
+        firstName: "Test",
+        lastName: "User",
+        role: "admin"
+      });
+      
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json({
+        message: "Test user created successfully",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("Error creating test user:", error);
+      res.status(500).json({ message: "Failed to create test user" });
+    }
   });
 }
 

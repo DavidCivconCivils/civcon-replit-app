@@ -44,8 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
     retryOnMount: false,
     refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.error("Auth error:", error);
+    // Using onSuccess/onError as these have proper typings
+    onSuccess: (data) => {
+      console.log("Auth success:", data?.email);
+    },
+    onError: () => {
+      console.error("Auth error: User not authenticated");
     }
   });
 
