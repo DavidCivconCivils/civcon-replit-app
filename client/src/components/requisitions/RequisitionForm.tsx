@@ -184,12 +184,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     setActiveTab(tab);
   };
 
-  const calculateItemTotal = (index: number) => {
-    const quantity = Number(form.getValues(`items.${index}.quantity`)) || 0;
-    const unitPrice = Number(form.getValues(`items.${index}.unitPrice`)) || 0;
-    const totalPrice = quantity * unitPrice;
-    form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2));
-  };
+  // Calculation function already defined above
 
   const isPending = createMutation.isPending;
 
