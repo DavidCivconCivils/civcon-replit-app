@@ -3,6 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import * as crypto from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
@@ -95,7 +96,11 @@ export function setupAuth(app: Express) {
 
       // Create user with hashed password
       const hashedPassword = await hashPassword(password);
+      // Generate a unique ID
+      const id = crypto.randomUUID();
+      
       const user = await storage.createUser({
+        id,
         email,
         password: hashedPassword,
         firstName,
