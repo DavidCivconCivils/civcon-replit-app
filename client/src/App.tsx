@@ -14,6 +14,7 @@ import Reports from "@/pages/reports";
 import Login from "@/pages/login";
 import MainLayout from "./components/layout/MainLayout";
 import { useAuth } from "./hooks/useAuth";
+import { AuthProvider } from "./providers/AuthProvider";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -80,10 +81,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
