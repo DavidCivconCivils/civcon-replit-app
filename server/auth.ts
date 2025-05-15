@@ -70,15 +70,23 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    console.log('Serializing user:', user.id);
+    done(null, user.id);
+  });
+  
   passport.deserializeUser(async (id: string, done) => {
     try {
+      console.log('Deserializing user with ID:', id);
       const user = await storage.getUser(id);
       if (!user) {
+        console.log('User not found during deserialization');
         return done(null, false);
       }
+      console.log('User found during deserialization:', user.email);
       return done(null, user);
     } catch (error) {
+      console.error('Error during deserialization:', error);
       return done(error);
     }
   });
