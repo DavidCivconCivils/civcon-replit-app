@@ -17,6 +17,8 @@ interface PurchaseOrderPreviewProps {
 }
 
 export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEmail }: PurchaseOrderPreviewProps) {
+  console.log("PurchaseOrderPreview data:", data);
+  
   // Add null checks/defaults to prevent errors
   const items = data.items || [];
   const requisition = data.requisition || {};
@@ -42,7 +44,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         <div>
           <p className="text-sm text-neutral-textLight">Project:</p>
           <p className="font-medium">
-            {project.name 
+            {project && project.name 
               ? `${project.name} (${project.contractNumber || 'No contract'})` 
               : "Not specified"}
           </p>
@@ -53,7 +55,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Purchase Order Number:</p>
-          <p className="font-medium">{data.poNumber}</p>
+          <p className="font-medium">{data.poNumber || "Not specified"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Status:</p>
@@ -68,11 +70,11 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       {/* Supplier Info */}
       <div className="bg-neutral p-4 rounded-md mb-6">
         <h4 className="font-medium mb-2">Supplier Information</h4>
-        {supplier.name ? (
+        {supplier && supplier.name ? (
           <>
-            <p>{supplier.name}</p>
-            <p className="text-sm text-neutral-textLight">{supplier.address || ""}</p>
-            <p className="text-sm text-neutral-textLight">{supplier.email || ""}</p>
+            <p className="font-medium">{supplier.name}</p>
+            {supplier.address && <p className="text-sm">{supplier.address}</p>}
+            {supplier.email && <p className="text-sm text-primary">{supplier.email}</p>}
           </>
         ) : (
           <p className="text-sm text-neutral-textLight">No supplier information</p>
@@ -94,7 +96,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-secondary">
-            {items.length > 0 ? (
+            {items && items.length > 0 ? (
               items.map((item, index) => (
                 <tr key={index}>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
@@ -102,10 +104,10 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.quantity}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.unit}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                    {formatCurrency(parseFloat(item.unitPrice))}
+                    {formatCurrency(parseFloat(item.unitPrice || "0"))}
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                    {formatCurrency(parseFloat(item.totalPrice))}
+                    {formatCurrency(parseFloat(item.totalPrice || "0"))}
                   </td>
                 </tr>
               ))
@@ -119,7 +121,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
           </tbody>
           <tfoot className="bg-neutral-secondary">
             <tr>
-              <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Subtotal:</td>
+              <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Total Amount:</td>
               <td className="px-4 py-2 text-sm font-medium">
                 {formatCurrency(parseFloat(totalAmount))}
               </td>
@@ -132,16 +134,18 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
-          <p className="font-medium">{requisition?.deliveryAddress || "N/A"}</p>
+          <p className="font-medium">{requisition && requisition.deliveryAddress ? requisition.deliveryAddress : "N/A"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Required By:</p>
-          <p className="font-medium">{requisition?.deliveryDate ? formatDate(requisition.deliveryDate) : "N/A"}</p>
+          <p className="font-medium">
+            {requisition && requisition.deliveryDate ? formatDate(requisition.deliveryDate) : "N/A"}
+          </p>
         </div>
-        {requisition?.deliveryInstructions && (
+        {requisition && requisition.deliveryInstructions && (
           <div className="col-span-2">
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
-            <p>{requisition.deliveryInstructions}</p>
+            <p className="font-medium">{requisition.deliveryInstructions}</p>
           </div>
         )}
       </div>
@@ -173,43 +177,45 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
           </div>
           <div>
             <p className="text-sm text-neutral-textLight">Original Requisition:</p>
-            <p className="font-medium">{requisition?.requisitionNumber || "N/A"}</p>
-            <p className="text-xs text-neutral-textLight">Date: {requisition?.requestDate ? formatDate(requisition.requestDate) : "N/A"}</p>
+            <p className="font-medium">
+              {requisition && requisition.requisitionNumber ? requisition.requisitionNumber : "N/A"}
+            </p>
+            <p className="text-xs text-neutral-textLight">
+              Date: {requisition && requisition.requestDate ? formatDate(requisition.requestDate) : "N/A"}
+            </p>
           </div>
         </div>
       </div>
       
       {/* Action Buttons (only visible in non-print mode) */}
-      {(onPrint || onExportPdf || onEmail) && (
-        <div className="no-print flex justify-end space-x-3 mt-6">
-          {onPrint && (
-            <Button 
-              onClick={onPrint} 
-              variant="outline"
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-          )}
-          {onExportPdf && (
-            <Button 
-              onClick={onExportPdf} 
-              variant="outline"
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
-          )}
-          {onEmail && (
-            <Button 
-              onClick={onEmail}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Email
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="no-print flex justify-end space-x-3 mt-6">
+        {onPrint && (
+          <Button 
+            onClick={onPrint} 
+            variant="outline"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        )}
+        {onExportPdf && (
+          <Button 
+            onClick={onExportPdf} 
+            variant="outline"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
+        )}
+        {onEmail && (
+          <Button 
+            onClick={onEmail}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            Email
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

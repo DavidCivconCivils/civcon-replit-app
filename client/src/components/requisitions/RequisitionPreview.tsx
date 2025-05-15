@@ -18,6 +18,8 @@ interface RequisitionPreviewProps {
       address: string;
       email: string;
     };
+    projectId?: number;
+    supplierId?: number;
     requestDate: string;
     deliveryDate: string;
     deliveryAddress: string;
@@ -33,6 +35,8 @@ interface RequisitionPreviewProps {
     }[];
     totalAmount: string;
     user?: User | null;
+    requestedById?: string;
+    terms?: boolean;
   };
   onExportPdf?: () => void;
   onPrint?: () => void;
@@ -40,6 +44,8 @@ interface RequisitionPreviewProps {
 }
 
 export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail }: RequisitionPreviewProps) {
+  console.log("RequisitionPreview data:", data);
+  
   return (
     <div className="print-container">
       {/* Requisition Header */}
@@ -88,17 +94,17 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
         <h4 className="font-medium mb-2">Supplier Information</h4>
         {data.supplier ? (
           <>
-            <p>{data.supplier.name}</p>
-            <p className="text-sm text-neutral-textLight">{data.supplier.address}</p>
-            <p className="text-sm text-neutral-textLight">{data.supplier.email}</p>
+            <p className="font-medium">{data.supplier.name}</p>
+            {data.supplier.address && <p className="text-sm">{data.supplier.address}</p>}
+            {data.supplier.email && <p className="text-sm text-primary">{data.supplier.email}</p>}
           </>
         ) : (
           <p className="text-sm text-neutral-textLight">No supplier selected</p>
         )}
       </div>
       
-      {/* Items Table */}
-      <h4 className="font-medium mb-2">Requisition Items</h4>
+      {/* Items Summary */}
+      <h4 className="font-medium mb-2">Items Summary</h4>
       <div className="overflow-x-auto mb-6">
         <table className="min-w-full divide-y divide-neutral-secondary border border-neutral-secondary rounded-md">
           <thead className="bg-neutral-secondary">
@@ -119,15 +125,15 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.quantity}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.unit}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                  {formatCurrency(parseFloat(item.unitPrice))}
+                  {formatCurrency(parseFloat(item.unitPrice) || 0)}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                  {formatCurrency(parseFloat(item.totalPrice))}
+                  {formatCurrency(parseFloat(item.totalPrice) || 0)}
                 </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan={5} className="px-4 py-4 text-center text-sm text-neutral-textLight">
+                <td colSpan={6} className="px-4 py-4 text-center text-sm text-neutral-textLight">
                   No items found in this requisition.
                 </td>
               </tr>
@@ -135,7 +141,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           </tbody>
           <tfoot className="bg-neutral-secondary">
             <tr>
-              <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Subtotal:</td>
+              <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Total Amount:</td>
               <td className="px-4 py-2 text-sm font-medium">
                 {data.totalAmount ? formatCurrency(parseFloat(data.totalAmount)) : '£0.00'}
               </td>
@@ -150,10 +156,14 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
           <p className="font-medium">{data.deliveryAddress || "N/A"}</p>
         </div>
+        <div>
+          <p className="text-sm text-neutral-textLight">Delivery Date:</p>
+          <p className="font-medium">{formatDate(data.deliveryDate)}</p>
+        </div>
         {data.deliveryInstructions && (
           <div>
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
-            <p>{data.deliveryInstructions}</p>
+            <p className="font-medium">{data.deliveryInstructions}</p>
           </div>
         )}
       </div>
@@ -167,16 +177,12 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       )}
       
       {/* Terms and Conditions */}
-      <div className="bg-neutral p-4 rounded-md mb-6">
-        <h4 className="font-medium mb-2">Terms and Conditions</h4>
-        <ol className="list-decimal ml-4 space-y-1 text-sm">
-          <li>All prices quoted must include delivery to the specified location.</li>
-          <li>The supplier must notify Civcon of any anticipated delays immediately.</li>
-          <li>Payment terms are net 30 days from the date of receipt of goods or services.</li>
-          <li>All goods delivered must match the specifications outlined in this requisition.</li>
-          <li>Civcon reserves the right to reject any goods that do not meet the required standards.</li>
-        </ol>
-      </div>
+      {data.terms && (
+        <div className="bg-neutral p-4 rounded-md mb-6">
+          <h4 className="font-medium mb-2">Terms and Conditions</h4>
+          <p className="text-sm">By submitting this requisition, I confirm that all information is accurate and approve the purchase of items listed above.</p>
+        </div>
+      )}
       
       {/* Signature Section */}
       <div className="border-t border-neutral-secondary pt-4 mb-6">
@@ -194,21 +200,24 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       
       {/* Action Buttons (only visible in non-print mode) */}
       <div className="no-print flex justify-end space-x-3 mt-6">
-        <Button 
-          onClick={onExportPdf} 
-          variant="outline"
-          disabled={!onExportPdf}
-        >
-          <FileDown className="mr-2 h-4 w-4" />
-          Export PDF
-        </Button>
-        <Button 
-          onClick={onEmail}
-          disabled={!onEmail}
-        >
-          <Mail className="mr-2 h-4 w-4" />
-          Email
-        </Button>
+        {onExportPdf && (
+          <Button 
+            onClick={onExportPdf} 
+            variant="outline"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
+        )}
+        {onEmail && (
+          <Button 
+            onClick={onEmail}
+            disabled={!onEmail}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            Email
+          </Button>
+        )}
       </div>
     </div>
   );
