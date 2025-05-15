@@ -35,8 +35,12 @@ function ProtectedRoute({ component: Component, ...rest }: { component: React.Co
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={Login} />
+      {/* Public routes */}
+      <Route path="/login">
+        <Login />
+      </Route>
       
+      {/* Protected routes */}
       <Route path="/">
         <MainLayout>
           <ProtectedRoute component={Dashboard} />
@@ -73,7 +77,10 @@ function Router() {
         </MainLayout>
       </Route>
       
-      <Route component={NotFound} />
+      {/* Not found route */}
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
