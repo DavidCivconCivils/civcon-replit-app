@@ -216,6 +216,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch requisitions" });
     }
   });
+  
+  // Email a requisition to finance
+  app.post('/api/requisitions/:id/email', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid requisition ID" });
+      }
+      
+      // Get all required data
+      const requisition = await storage.getRequisition(id);
+      if (!requisition) {
+        return res.status(404).json({ message: "Requisition not found" });
+      }
+      
+      const project = await storage.getProject(requisition.projectId);
+      const supplier = await storage.getSupplier(requisition.supplierId);
+      const user = await storage.getUser(requisition.requestedById);
+      const items = await storage.getRequisitionItems(requisition.id);
+      
+      if (!project || !supplier || !user || !items.length) {
+        return res.status(400).json({ 
+          message: "Missing required data to email requisition",
+          details: {
+            hasProject: !!project,
+            hasSupplier: !!supplier,
+            hasUser: !!user,
+            itemCount: items.length
+          }
+        });
+      }
+      
+      // Generate PDF
+      const pdfBuffer = await generatePDF('requisition', {
+        requisition,
+        items,
+        project,
+        supplier,
+        user
+      });
+      
+      // Send email
+      const emailResult = await sendEmail({
+        to: 'finance@civcon.example.com',
+        subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
+        text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
+        html: `
+          <h1>New Purchase Requisition</h1>
+          <p>A new purchase requisition has been submitted with the following details:</p>
+          <ul>
+            <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
+            <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+            <li><strong>Supplier:</strong> ${supplier.name}</li>
+            <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
+            <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
+          </ul>
+          <p>Please review and approve this requisition.</p>
+        `,
+        attachments: [
+          {
+            filename: `${requisition.requisitionNumber}.pdf`,
+            content: pdfBuffer
+          }
+        ]
+      });
+      
+      if (emailResult.success) {
+        res.json({ success: true, message: "Email sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send email", error: emailResult.error });
+      }
+    } catch (error) {
+      console.error("Error sending requisition email:", error);
+      res.status(500).json({ success: false, message: "Failed to send email", error: String(error) });
+    }
+  });
 
   app.get('/api/requisitions/:id', isAuthenticated, async (req, res) => {
     try {
@@ -246,7 +322,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate requisition data
       const requisitionSchema = insertRequisitionSchema.extend({
-        items: z.array(insertRequisitionItemSchema)
+        items: z.array(insertRequisitionItemSchema.extend({
+          // Parse quantity as a number explicitly
+          quantity: z.coerce.number().int().positive()
+        }))
       });
       
       const { items, ...requisitionData } = requisitionSchema.parse({
@@ -254,62 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedById: userId
       });
       
-      // Create the requisition
+      // Create the requisition without sending email
       const requisition = await storage.createRequisition(requisitionData, items);
-      
-      // Send email to finance team
-      const project = await storage.getProject(requisitionData.projectId);
-      const supplier = await storage.getSupplier(requisitionData.supplierId);
-      const user = await storage.getUser(userId);
-      
-      // Process email notification in background, don't block requisition creation
-      if (project && supplier && user) {
-        try {
-          // Get the saved requisition items
-          const savedItems = await storage.getRequisitionItems(requisition.id);
-          
-          // Generate PDF
-          const pdfBuffer = await generatePDF('requisition', {
-            requisition,
-            items: savedItems,
-            project,
-            supplier,
-            user
-          });
-          
-          // Try to send email, but don't fail if email sending fails
-          const emailResult = await sendEmail({
-            to: 'finance@civcon.example.com',
-            subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
-            text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
-            html: `
-              <h1>New Purchase Requisition</h1>
-              <p>A new purchase requisition has been submitted with the following details:</p>
-              <ul>
-                <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
-                <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
-                <li><strong>Supplier:</strong> ${supplier.name}</li>
-                <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
-                <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
-              </ul>
-              <p>Please review and approve this requisition.</p>
-            `,
-            attachments: [
-              {
-                filename: `${requisition.requisitionNumber}.pdf`,
-                content: pdfBuffer
-              }
-            ]
-          });
-          
-          if (!emailResult.success) {
-            console.log(`Email notification failed but requisition ${requisition.requisitionNumber} was created successfully`);
-          }
-        } catch (emailError) {
-          // Log email error but don't fail the requisition creation
-          console.error("Error with email notification:", emailError);
-        }
-      }
       
       res.status(201).json(requisition);
     } catch (error) {

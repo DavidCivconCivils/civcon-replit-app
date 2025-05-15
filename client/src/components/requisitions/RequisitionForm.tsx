@@ -22,6 +22,8 @@ import RequisitionPreview from "./RequisitionPreview";
 // Combine the schemas for form validation
 const requisitionItemSchema = insertRequisitionItemSchema.extend({
   id: z.number().optional(),
+  // Make sure quantity is always parsed as a number
+  quantity: z.coerce.number().int().positive("Quantity must be a positive number"),
 });
 
 const formSchema = insertRequisitionSchema.extend({
