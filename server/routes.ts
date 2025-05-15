@@ -537,30 +537,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/requisitions/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/requisitions/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid requisition ID" });
       }
       
+      console.log(`Fetching requisition details for ID: ${id}`);
+      
+      // Get the requisition
       const requisition = await storage.getRequisition(id);
       if (!requisition) {
         return res.status(404).json({ message: "Requisition not found" });
       }
       
+      // Check user permission (admin/finance see all, others only see their own)
+      if (req.user.role !== 'admin' && req.user.role !== 'finance' && requisition.requestedById !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to view this requisition" });
+      }
+      
+      // Fetch related data
+      console.log(`Fetching related data for requisition ${requisition.requisitionNumber}`);
       const items = await storage.getRequisitionItems(requisition.id);
       const project = requisition.projectId ? await storage.getProject(requisition.projectId) : null;
       const supplier = requisition.supplierId ? await storage.getSupplier(requisition.supplierId) : null;
       const user = requisition.requestedById ? await storage.getUser(requisition.requestedById) : null;
       
-      res.json({
+      // Remove sensitive info from user data
+      let userData = null;
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        userData = userWithoutPassword;
+      }
+      
+      // Construct response object
+      const responseData = {
         ...requisition,
-        items,
-        project,
-        supplier,
-        user
-      });
+        items: items || [],
+        project: project || {},
+        supplier: supplier || {},
+        user: userData
+      };
+      
+      console.log(`Sending response data for requisition ${requisition.requisitionNumber}`);
+      console.log(`Response has project: ${!!responseData.project}, supplier: ${!!responseData.supplier}, items: ${responseData.items.length}`);
+      
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching requisition:", error);
       res.status(500).json({ message: "Failed to fetch requisition" });
