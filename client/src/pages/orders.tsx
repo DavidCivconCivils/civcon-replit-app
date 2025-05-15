@@ -40,8 +40,8 @@ export default function Orders() {
     enabled: isFinanceOrAdmin,
   });
 
-  // Get pending requisitions
-  const pendingRequisitions = requisitions.filter(req => req.status === 'approved');
+  // Get pending requisitions - these are the ones with status 'pending'
+  const pendingRequisitions = requisitions.filter(req => req.status === 'pending');
 
   // Fetch order details for preview
   const { data: orderDetails, isLoading: isLoadingDetails } = useQuery({
@@ -273,9 +273,9 @@ export default function Orders() {
             </div>
           </TabsContent>
 
-          <TabsContent value="pending" className="space-y-4">
+          <TabsContent value="pending" className="space-y-4" id="requisitions-to-process">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">Requisitions Awaiting Processing</h2>
+              <h2 className="text-xl font-bold">Pending Requisitions to Process</h2>
             </div>
 
             {isLoadingRequisitions ? (
