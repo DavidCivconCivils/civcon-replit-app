@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { PurchaseOrder, Requisition } from "@shared/schema";
+import { PurchaseOrder, Requisition, Project, Supplier } from "@shared/schema";
 import PurchaseOrderForm from "@/components/orders/PurchaseOrderForm";
 import PurchaseOrderPreview from "@/components/orders/PurchaseOrderPreview";
 import RequisitionApprovalDialog from "@/components/requisitions/RequisitionApprovalDialog";
@@ -58,11 +58,11 @@ export default function Orders() {
   });
 
   // Fetch projects and suppliers for displaying names
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
 
-  const { data: suppliers = [] } = useQuery({
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ['/api/suppliers'],
   });
 
@@ -247,10 +247,10 @@ export default function Orders() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-8 w-8 text-primary hover:text-primary-dark"
-                                onClick={() => emailMutation.mutate(order.id)}
-                                disabled={emailMutation.isPending}
+                                onClick={() => emailPurchaseOrderMutation.mutate(order.id)}
+                                disabled={emailPurchaseOrderMutation.isPending}
                               >
-                                {emailMutation.isPending && selectedOrder === order.id ? (
+                                {emailPurchaseOrderMutation.isPending && selectedOrder === order.id ? (
                                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-r-transparent" />
                                 ) : (
                                   <Mail size={16} />
@@ -309,10 +309,10 @@ export default function Orders() {
                       <TableRow key={req.id}>
                         <TableCell className="font-medium">{req.requisitionNumber}</TableCell>
                         <TableCell>
-                          {projects.find(p => p.id === req.projectId)?.name || `Project ${req.projectId}`}
+                          {projects.find((p: Project) => p.id === req.projectId)?.name || `Project ${req.projectId}`}
                         </TableCell>
                         <TableCell>
-                          {suppliers.find(s => s.id === req.supplierId)?.name || `Supplier ${req.supplierId}`}
+                          {suppliers.find((s: Supplier) => s.id === req.supplierId)?.name || `Supplier ${req.supplierId}`}
                         </TableCell>
                         <TableCell>{formatDate(req.requestDate)}</TableCell>
                         <TableCell>{formatCurrency(parseFloat(req.totalAmount.toString()))}</TableCell>
