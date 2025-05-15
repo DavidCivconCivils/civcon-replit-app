@@ -42,6 +42,14 @@ export default function Requisitions() {
       setLocation('/requisitions', { replace: true });
     }
     
+    // Check if a status filter is specified
+    if (searchParams.has('status')) {
+      const status = searchParams.get('status');
+      if (status === 'pending' || status === 'approved' || status === 'rejected' || status === 'all') {
+        setActiveTab(status);
+      }
+    }
+    
     // Check if a project filter is specified
     if (searchParams.has('projectId')) {
       // Could set additional filter here
@@ -96,8 +104,15 @@ export default function Requisitions() {
   // Filter and sort requisitions
   const filteredRequisitions = requisitions?.filter(req => {
     // Filter by status tab
-    if (activeTab !== "all" && req.status !== activeTab) {
-      return false;
+    if (activeTab !== "all") {
+      // Special handling for each tab to ensure correct filtering
+      if (activeTab === "pending" && req.status !== "pending") {
+        return false;
+      } else if (activeTab === "approved" && req.status !== "approved") {
+        return false;
+      } else if (activeTab === "rejected" && req.status !== "rejected") {
+        return false;
+      }
     }
     
     // Filter by search term
@@ -227,7 +242,7 @@ export default function Requisitions() {
               <div className="flex justify-between items-center mb-4">
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="pending">Sent for Approval</TabsTrigger>
                   <TabsTrigger value="approved">Approved</TabsTrigger>
                   <TabsTrigger value="rejected">Rejected</TabsTrigger>
                 </TabsList>
