@@ -246,7 +246,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/requisitions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Get user ID properly (session-based auth doesn't have claims.sub)
+      const userId = req.user.id;
+      console.log('Creating requisition for user:', userId);
       
       // Validate requisition data
       const requisitionSchema = insertRequisitionSchema.extend({
@@ -337,7 +339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If approved, create a purchase order
       if (status === 'approved') {
-        const userId = req.user.claims.sub;
+        // Get user ID properly
+        const userId = req.user.id;
+        console.log('Approving requisition with user:', userId);
         const user = await storage.getUser(userId);
         
         // Generate purchase order only if it doesn't exist already
