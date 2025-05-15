@@ -52,6 +52,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     queryKey: ['/api/suppliers'],
   });
 
+  // Initialize form with user ID already set
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -62,6 +63,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       deliveryAddress: "",
       deliveryInstructions: "",
       totalAmount: "0",
+      requestedById: user?.id, // Set the user ID right away if available
       items: [
         {
           description: "",
@@ -187,9 +189,20 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       ]);
       
       if (!isItemsInfoValid) return;
+      
+      // Make sure calculations are up to date before reviewing
+      calculateTotals();
     }
     
-    setActiveTab(tab);
+    // Force a refresh of the form data when navigating to review
+    if (tab === "review") {
+      // This ensures all updated form values are shown in review
+      setTimeout(() => {
+        setActiveTab(tab);
+      }, 50);
+    } else {
+      setActiveTab(tab);
+    }
   };
 
   // Calculation function already defined above
