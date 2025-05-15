@@ -262,43 +262,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supplier = await storage.getSupplier(requisitionData.supplierId);
       const user = await storage.getUser(userId);
       
+      // Process email notification in background, don't block requisition creation
       if (project && supplier && user) {
-        // Get the saved requisition items
-        const savedItems = await storage.getRequisitionItems(requisition.id);
-        
-        // Generate PDF
-        const pdfBuffer = await generatePDF('requisition', {
-          requisition,
-          items: savedItems,
-          project,
-          supplier,
-          user
-        });
-        
-        // Send email
-        await sendEmail({
-          to: 'finance@civcon.example.com',
-          subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
-          text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
-          html: `
-            <h1>New Purchase Requisition</h1>
-            <p>A new purchase requisition has been submitted with the following details:</p>
-            <ul>
-              <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
-              <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
-              <li><strong>Supplier:</strong> ${supplier.name}</li>
-              <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
-              <li><strong>Amount:</strong> $${requisition.totalAmount}</li>
-            </ul>
-            <p>Please review and approve this requisition.</p>
-          `,
-          attachments: [
-            {
-              filename: `${requisition.requisitionNumber}.pdf`,
-              content: pdfBuffer
-            }
-          ]
-        });
+        try {
+          // Get the saved requisition items
+          const savedItems = await storage.getRequisitionItems(requisition.id);
+          
+          // Generate PDF
+          const pdfBuffer = await generatePDF('requisition', {
+            requisition,
+            items: savedItems,
+            project,
+            supplier,
+            user
+          });
+          
+          // Try to send email, but don't fail if email sending fails
+          const emailResult = await sendEmail({
+            to: 'finance@civcon.example.com',
+            subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
+            text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
+            html: `
+              <h1>New Purchase Requisition</h1>
+              <p>A new purchase requisition has been submitted with the following details:</p>
+              <ul>
+                <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
+                <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+                <li><strong>Supplier:</strong> ${supplier.name}</li>
+                <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
+                <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
+              </ul>
+              <p>Please review and approve this requisition.</p>
+            `,
+            attachments: [
+              {
+                filename: `${requisition.requisitionNumber}.pdf`,
+                content: pdfBuffer
+              }
+            ]
+          });
+          
+          if (!emailResult.success) {
+            console.log(`Email notification failed but requisition ${requisition.requisitionNumber} was created successfully`);
+          }
+        } catch (emailError) {
+          // Log email error but don't fail the requisition creation
+          console.error("Error with email notification:", emailError);
+        }
       }
       
       res.status(201).json(requisition);

@@ -46,7 +46,7 @@ function getTransporter() {
   return transporter;
 }
 
-export async function sendEmail(options: EmailOptions): Promise<void> {
+export async function sendEmail(options: EmailOptions): Promise<{success: boolean, error?: any}> {
   try {
     const transport = getTransporter();
     
@@ -64,8 +64,14 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
         console.log('Preview URL: %s', (info as any).previewUrl);
       }
     }
+    
+    return { success: true };
   } catch (error) {
     console.error('Error sending email:', error);
-    throw new Error('Failed to send email');
+    // Return error information instead of throwing
+    return { 
+      success: false, 
+      error 
+    };
   }
 }
