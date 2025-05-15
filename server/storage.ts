@@ -28,9 +28,12 @@ import * as crypto from "crypto";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, userData: Partial<UpsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   
   // Project operations
   getProjects(): Promise<Project[]>;
