@@ -50,20 +50,20 @@ export function getStatusColor(status: string): {
     case "issued":
     case "success":
     case "delivered":
-      return { bg: "bg-status-success", text: "text-white" };
+      return { bg: "bg-status-success", text: "text-black" };
     case "pending":
     case "in progress":
     case "warning":
-      return { bg: "bg-status-warning", text: "text-neutral-text" };
+      return { bg: "bg-status-warning", text: "text-black" };
     case "rejected":
     case "error":
     case "cancelled":
-      return { bg: "bg-status-error", text: "text-white" };
+      return { bg: "bg-status-error", text: "text-black" };
     case "completed":
-      return { bg: "bg-neutral-textLight", text: "text-white" };
+      return { bg: "bg-neutral-textLight", text: "text-black" };
     case "info":
-      return { bg: "bg-status-info", text: "text-white" };
+      return { bg: "bg-status-info", text: "text-black" };
     default:
-      return { bg: "bg-neutral-secondary", text: "text-neutral-text" };
+      return { bg: "bg-neutral-secondary", text: "text-black" };
   }
 }

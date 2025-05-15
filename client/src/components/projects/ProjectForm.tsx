@@ -121,7 +121,7 @@ export default function ProjectForm({ project, isOpen, onClose }: ProjectFormPro
                 <FormItem>
                   <FormLabel>Contract Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. CIV-2023-0112" {...field} disabled={isEditing} />
+                    <Input placeholder="e.g. CIV-2023-0112" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

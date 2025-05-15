@@ -37,12 +37,6 @@ export default function ProjectCard({ project, onEdit }: ProjectCardProps) {
         </div>
       </CardContent>
       <CardFooter className="border-t border-neutral-secondary p-4 bg-neutral flex justify-between">
-        <Link href={`/projects/${project.id}`}>
-          <a className="text-primary text-sm hover:underline flex items-center">
-            <Eye size={16} className="mr-1" />
-            Details
-          </a>
-        </Link>
         <button
           onClick={() => onEdit(project)}
           className="text-primary text-sm hover:underline flex items-center"
