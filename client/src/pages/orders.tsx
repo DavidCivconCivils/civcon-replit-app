@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { PurchaseOrder } from "@shared/schema";
 import PurchaseOrderForm from "@/components/orders/PurchaseOrderForm";
 import PurchaseOrderPreview from "@/components/orders/PurchaseOrderPreview";
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import { Filter, Search, Eye, Printer, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Orders() {
   const { user } = useAuth();
@@ -69,9 +71,37 @@ export default function Orders() {
     alert('PDF export functionality would be implemented here.');
   };
 
+  const emailMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/purchase-orders/${id}/email`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Email sent",
+        description: "Purchase order has been emailed to the supplier.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Email failed",
+        description: error.message || "Failed to email purchase order to supplier.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEmailOrder = () => {
-    // This would typically invoke a server endpoint to email the PO to the supplier
-    alert('Email functionality would be implemented here.');
+    if (!selectedOrder) {
+      toast({
+        title: "Error",
+        description: "Please select a purchase order first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    emailMutation.mutate(selectedOrder);
   };
 
   const canCreatePurchaseOrder = user?.role === 'finance';
@@ -163,9 +193,17 @@ export default function Orders() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-primary hover:text-primary-dark"
-                          onClick={handleEmailOrder}
+                          onClick={() => {
+                            setSelectedOrder(order.id);
+                            handleEmailOrder();
+                          }}
+                          disabled={emailMutation.isPending}
                         >
-                          <Mail size={16} />
+                          {emailMutation.isPending && selectedOrder === order.id ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-r-transparent" />
+                          ) : (
+                            <Mail size={16} />
+                          )}
                         </Button>
                       </div>
                     </TableCell>

@@ -594,6 +594,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch purchase order" });
     }
   });
+  
+  // Email a purchase order to supplier
+  app.post('/api/purchase-orders/:id/email', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid purchase order ID" });
+      }
+      
+      const purchaseOrder = await storage.getPurchaseOrder(id);
+      if (!purchaseOrder) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+      
+      // Get all required data
+      const requisition = await storage.getRequisition(purchaseOrder.requisitionId);
+      const project = await storage.getProject(requisition.projectId);
+      const supplier = await storage.getSupplier(requisition.supplierId);
+      const user = await storage.getUser(req.user.id || req.user.claims?.sub);
+      const items = await storage.getRequisitionItems(requisition.id);
+      
+      if (!project || !supplier || !user || !items.length) {
+        return res.status(400).json({ 
+          message: "Missing required data to email purchase order",
+          details: {
+            hasProject: !!project,
+            hasSupplier: !!supplier,
+            hasUser: !!user,
+            itemCount: items.length
+          }
+        });
+      }
+      
+      // Generate PDF
+      const pdfBuffer = await generatePDF('purchaseOrder', {
+        purchaseOrder,
+        requisition,
+        items,
+        project,
+        supplier,
+        approver: user
+      });
+      
+      // Send email to supplier
+      const emailResult = await sendEmail({
+        to: supplier.email,
+        subject: `Purchase Order: ${purchaseOrder.poNumber}`,
+        text: `A purchase order (${purchaseOrder.poNumber}) has been issued for ${project.name}. Please see attached PDF for details.`,
+        html: `
+          <h1>Purchase Order: ${purchaseOrder.poNumber}</h1>
+          <p>Dear ${supplier.name},</p>
+          <p>We are pleased to issue the attached purchase order for the following:</p>
+          <ul>
+            <li><strong>Purchase Order Number:</strong> ${purchaseOrder.poNumber}</li>
+            <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+            <li><strong>Total Amount:</strong> £${purchaseOrder.totalAmount}</li>
+          </ul>
+          <p>Please review the attached purchase order for complete details.</p>
+          <p>Regards,<br>Civcon Office</p>
+        `,
+        attachments: [
+          {
+            filename: `${purchaseOrder.poNumber}.pdf`,
+            content: pdfBuffer
+          }
+        ]
+      });
+      
+      if (emailResult.success) {
+        res.json({ message: "Purchase order emailed successfully to supplier" });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to email purchase order", 
+          error: emailResult.error
+        });
+      }
+    } catch (error) {
+      console.error("Error emailing purchase order:", error);
+      res.status(500).json({ message: "Failed to email purchase order" });
+    }
+  });
 
   app.post('/api/purchase-orders', isAuthenticated, async (req: any, res) => {
     try {
