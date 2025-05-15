@@ -665,8 +665,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // In a real app, we might send an email with a token here
       // But for this implementation, we'll directly update the password
       
+      // Hash the password before storing it
+      const hashedPassword = await hashPassword(newPassword);
+      
       // Update the password using storage's method
-      const updatedUser = await storage.updateUserPassword(user.id, newPassword);
+      const updatedUser = await storage.updateUserPassword(user.id, hashedPassword);
       
       if (!updatedUser) {
         return res.status(500).json({ message: "Failed to update password" });
