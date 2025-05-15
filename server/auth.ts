@@ -232,6 +232,38 @@ export function setupAuth(app: Express) {
       res.status(500).json({ message: "Failed to create test user" });
     }
   });
+  
+  // Password reset endpoint
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { email, newPassword } = req.body;
+      
+      if (!email || !newPassword) {
+        return res.status(400).json({ message: "Email and new password are required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      const updatedUser = await storage.updateUserPassword(user.id, hashedPassword);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ message: "Password reset failed" });
+    }
+  });
 }
 
 export const isAuthenticated = (req, res, next) => {

@@ -24,6 +24,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -37,12 +50,24 @@ const registerSchema = z.object({
   lastName: z.string().optional(),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function Login() {
   const { user, isLoading, isAuthenticated, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [resetPasswordStatus, setResetPasswordStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
@@ -72,6 +97,16 @@ export default function Login() {
     },
   });
 
+  // Initialize password reset form
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      email: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
   // Handle form submission
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
@@ -79,6 +114,42 @@ export default function Login() {
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
+  };
+  
+  const { toast } = useToast();
+  
+  const handleResetPassword = async (data: ResetPasswordFormValues) => {
+    try {
+      setResetPasswordStatus("pending");
+      const response = await apiRequest("POST", "/api/reset-password", {
+        email: data.email,
+        newPassword: data.newPassword,
+      });
+      
+      if (response.ok) {
+        setResetPasswordStatus("success");
+        resetPasswordForm.reset();
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been changed. You can now log in with your new password.",
+        });
+        setTimeout(() => {
+          setResetPasswordModalOpen(false);
+          setResetPasswordStatus("idle");
+        }, 2000);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to reset password");
+      }
+    } catch (error: any) {
+      setResetPasswordStatus("error");
+      toast({
+        title: "Password reset failed",
+        description: error.message || "An error occurred while resetting your password",
+        variant: "destructive",
+      });
+      console.error("Password reset error:", error);
+    }
   };
 
   if (isLoading) {

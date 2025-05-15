@@ -103,6 +103,21 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
+  
+  async updateUserPassword(userId: string, newPassword: string): Promise<User | undefined> {
+    console.log(`Updating password for user ID: ${userId}`);
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        password: newPassword,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    console.log("Password update result:", updatedUser ? "Success" : "Failed");
+    return updatedUser;
+  }
 
   // Project operations
   async getProjects(): Promise<Project[]> {
