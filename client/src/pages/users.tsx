@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
-import MainLayout from "@/components/layout/MainLayout";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -222,7 +221,7 @@ export default function UsersPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -464,6 +463,6 @@ export default function UsersPage() {
           </Form>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </>
   );
 }
