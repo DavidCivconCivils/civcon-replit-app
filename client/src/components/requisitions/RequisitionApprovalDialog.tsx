@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 
 interface RequisitionApprovalDialogProps {
@@ -22,130 +29,146 @@ export default function RequisitionApprovalDialog({
   const [poNumber, setPoNumber] = useState("");
   const { toast } = useToast();
 
-  const approvalMutation = useMutation({
-    mutationFn: async () => {
-      if (!requisitionId) return;
-      const res = await apiRequest("PUT", `/api/requisitions/${requisitionId}/status`, {
-        status: "approved",
-        poNumber
-      });
-      return res.json();
+  const approveMutation = useMutation({
+    mutationFn: async ({ requisitionId, poNumber }: { requisitionId: number, poNumber: string }) => {
+      const response = await apiRequest(
+        "PUT",
+        `/api/requisitions/${requisitionId}/status`,
+        {
+          status: "approved",
+          poNumber
+        }
+      );
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Requisition approved",
-        description: "The requisition has been approved and a purchase order has been created."
+        description: "Purchase order has been created successfully.",
+        variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders'] });
-      onClose();
-      setPoNumber("");
+      handleClose();
     },
     onError: (error: Error) => {
       toast({
         title: "Approval failed",
-        description: error.message || "There was an error approving the requisition.",
-        variant: "destructive"
+        description: error.message,
+        variant: "destructive",
       });
-    }
+    },
   });
 
-  const rejectionMutation = useMutation({
-    mutationFn: async () => {
-      if (!requisitionId) return;
-      const res = await apiRequest("PUT", `/api/requisitions/${requisitionId}/status`, {
-        status: "rejected"
-      });
-      return res.json();
+  const rejectMutation = useMutation({
+    mutationFn: async (requisitionId: number) => {
+      const response = await apiRequest(
+        "PUT",
+        `/api/requisitions/${requisitionId}/status`,
+        {
+          status: "rejected"
+        }
+      );
+      return await response.json();
     },
     onSuccess: () => {
       toast({
         title: "Requisition rejected",
-        description: "The requisition has been rejected."
+        description: "The requisition has been rejected.",
+        variant: "success",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
-      onClose();
+      handleClose();
     },
     onError: (error: Error) => {
       toast({
         title: "Rejection failed",
-        description: error.message || "There was an error rejecting the requisition.",
-        variant: "destructive"
+        description: error.message,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleApprove = () => {
+    if (!requisitionId) return;
+    
     if (!poNumber.trim()) {
       toast({
-        title: "Purchase Order Required",
-        description: "Please enter a Purchase Order number before approving.",
-        variant: "destructive"
+        title: "Error",
+        description: "Please enter a purchase order number",
+        variant: "destructive",
       });
       return;
     }
-    approvalMutation.mutate();
+
+    approveMutation.mutate({ requisitionId, poNumber });
   };
 
   const handleReject = () => {
-    rejectionMutation.mutate();
+    if (!requisitionId) return;
+    rejectMutation.mutate(requisitionId);
   };
 
-  const isPending = approvalMutation.isPending || rejectionMutation.isPending;
+  const handleClose = () => {
+    setPoNumber("");
+    onClose();
+  };
+
+  const isLoading = approveMutation.isPending || rejectMutation.isPending;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Requisition Approval</DialogTitle>
+          <DialogTitle>Approve Requisition</DialogTitle>
           <DialogDescription>
-            Review this requisition and decide whether to approve or reject it.
+            Enter a purchase order number to approve this requisition or reject it.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
             <Label htmlFor="poNumber">Purchase Order Number</Label>
             <Input
               id="poNumber"
-              placeholder="Enter PO number (required for approval)"
+              placeholder="Enter PO number"
               value={poNumber}
               onChange={(e) => setPoNumber(e.target.value)}
-              disabled={isPending}
+              disabled={isLoading}
             />
-            <p className="text-sm text-muted-foreground">
-              The purchase order number is required when approving a requisition.
-            </p>
           </div>
         </div>
-        
-        <DialogFooter className="flex space-x-2 justify-end">
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancel
-          </Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleReject}
-            disabled={isPending}
-          >
-            {rejectionMutation.isPending ? (
-              <>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          <div>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleReject}
+              disabled={isLoading}
+            >
+              {rejectMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Rejecting...
-              </>
-            ) : "Reject"}
-          </Button>
-          <Button 
-            onClick={handleApprove}
-            disabled={isPending || !poNumber.trim()}
-          >
-            {approvalMutation.isPending ? (
-              <>
+              ) : null}
+              Reject
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleApprove}
+              disabled={isLoading}
+            >
+              {approveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Approving...
-              </>
-            ) : "Approve"}
-          </Button>
+              ) : null}
+              Approve
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -323,6 +323,16 @@ export default function Requisitions() {
                                     <XCircle size={16} />
                                   </Button>
                                 )}
+                                {req.status === "pending" && (user?.role === "finance" || user?.role === "admin") && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-success hover:text-success/80"
+                                    onClick={() => handleApproveRequisition(req.id)}
+                                  >
+                                    <CheckCircle size={16} />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -420,6 +430,13 @@ export default function Requisitions() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          
+          {/* Approval Dialog */}
+          <RequisitionApprovalDialog 
+            isOpen={showApprovalDialog} 
+            onClose={handleCloseApprovalDialog} 
+            requisitionId={requisitionToApprove} 
+          />
         </>
       )}
     </div>
