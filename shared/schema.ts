@@ -95,6 +95,8 @@ export const requisitionItems = pgTable("requisition_items", {
   unit: varchar("unit", { length: 50 }).notNull(),
   unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
   totalPrice: numeric("total_price", { precision: 12, scale: 2 }).notNull(),
+  vatType: varchar("vat_type", { length: 50 }).default("20% VAT"),
+  vatAmount: numeric("vat_amount", { precision: 12, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

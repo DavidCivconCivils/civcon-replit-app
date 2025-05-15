@@ -73,6 +73,8 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
           unit: "Each",
           unitPrice: "0",
           totalPrice: "0",
+          vatType: "VAT 20%",
+          vatAmount: "0",
         },
       ],
       terms: false,
@@ -170,6 +172,8 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       unit: "Each",
       unitPrice: "0",
       totalPrice: "0",
+      vatType: "VAT 20%",
+      vatAmount: "0",
     });
   };
 

@@ -45,9 +45,9 @@ export async function generatePDF(
       const logoData = fs.readFileSync(logoPath, { encoding: 'base64' });
       const imgData = `data:image/png;base64,${logoData}`;
       
-      // Add image using base64 data with maximum compression options
-      doc.addImage(imgData, 'PNG', 150, 10, 40, 16, undefined, 'FAST', 0.2); // Smaller size, higher compression
-      console.log('Logo added to PDF successfully with high compression');
+      // Add image using base64 data with normal quality
+      doc.addImage(imgData, 'PNG', 140, 10, 50, 20); // Restored to original size and quality
+      console.log('Logo added to PDF successfully');
     } else {
       throw new Error('Logo file not found at: ' + logoPath);
     }
