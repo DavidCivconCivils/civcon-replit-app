@@ -18,11 +18,7 @@ export default function Header() {
   const [_, setLocation] = useLocation();
 
   const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        setLocation("/login");
-      }
-    });
+    logoutMutation.mutate();
   };
 
   return (

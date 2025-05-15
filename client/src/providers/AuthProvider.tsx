@@ -97,10 +97,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      const res = await apiRequest("POST", "/api/logout");
+      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Redirect to home page after logout
+      if (data && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        // Fallback to home page if no redirect URL is provided
+        window.location.href = "/";
+      }
+      
       toast({
         title: "Logged out",
         description: "You have been logged out successfully.",
