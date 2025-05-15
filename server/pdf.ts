@@ -5,7 +5,7 @@ import { User, Project, Supplier, Requisition, RequisitionItem, PurchaseOrder } 
 
 type RequisitionData = {
   requisition: Requisition;
-  items: RequisitionItem[];
+  items: any[]; // Allow more flexible types for items
   project: Project;
   supplier: Supplier;
   user: User;
@@ -14,7 +14,7 @@ type RequisitionData = {
 type PurchaseOrderData = {
   purchaseOrder: PurchaseOrder;
   requisition: Requisition;
-  items: RequisitionItem[];
+  items: any[]; // Allow more flexible types for items
   project: Project;
   supplier: Supplier;
   approver: User;

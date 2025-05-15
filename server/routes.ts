@@ -267,10 +267,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       if (project && supplier && user) {
+        // Get the saved requisition items
+        const savedItems = await storage.getRequisitionItems(requisition.id);
+        
         // Generate PDF
         const pdfBuffer = await generatePDF('requisition', {
           requisition,
-          items,
+          items: savedItems,
           project,
           supplier,
           user
@@ -341,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingPO = await storage.getPurchaseOrderByRequisition(id);
         if (!existingPO) {
           // Create purchase order
-          const purchaseOrderData: InsertPurchaseOrder = {
+          const purchaseOrderData = {
             requisitionId: id,
             approvedById: userId,
             issueDate: new Date().toISOString().split('T')[0],
