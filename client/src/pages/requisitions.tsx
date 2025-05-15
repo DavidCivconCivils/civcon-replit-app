@@ -98,13 +98,15 @@ export default function Requisitions() {
   // Fetch requisition details for preview
   const { data: requisitionDetails, isLoading: isLoadingDetails } = useQuery<any>({
     queryKey: ['/api/requisitions', selectedRequisition],
-    enabled: selectedRequisition !== null,
-    onSuccess: (data) => {
-      console.log('Loaded requisition details:', data);
+    queryFn: async () => {
+      if (!selectedRequisition) return null;
+      const response = await fetch(`/api/requisitions/${selectedRequisition}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch requisition: ${response.statusText}`);
+      }
+      return response.json();
     },
-    onError: (error) => {
-      console.error('Failed to load requisition details:', error);
-    }
+    enabled: selectedRequisition !== null
   });
 
   // Filter and sort requisitions

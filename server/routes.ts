@@ -781,25 +781,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/purchase-orders/:id', isAuthenticated, async (req, res) => {
+  app.get('/api/purchase-orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid purchase order ID" });
       }
       
+      // Get the purchase order
       const purchaseOrder = await storage.getPurchaseOrder(id);
       if (!purchaseOrder) {
         return res.status(404).json({ message: "Purchase order not found" });
       }
       
+      // Get the related requisition
       const requisition = await storage.getRequisition(purchaseOrder.requisitionId);
-      const items = await storage.getRequisitionItems(purchaseOrder.requisitionId);
+      if (!requisition) {
+        return res.status(404).json({ message: "Related requisition not found" });
+      }
       
-      res.json({ ...purchaseOrder, requisition, items });
+      // Check user permission (admin/finance see all, others only see their own)
+      if (req.user.role !== 'admin' && req.user.role !== 'finance' && requisition.requestedById !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to view this purchase order" });
+      }
+      
+      // Get all related data
+      const project = await storage.getProject(requisition.projectId);
+      const supplier = await storage.getSupplier(requisition.supplierId);
+      const approver = await storage.getUser(purchaseOrder.approvedById);
+      const requestedBy = await storage.getUser(requisition.requestedById);
+      const items = await storage.getRequisitionItems(requisition.id);
+      
+      // Remove sensitive info from users
+      let approverData = null;
+      if (approver) {
+        const { password, ...approverWithoutPassword } = approver;
+        approverData = approverWithoutPassword;
+      }
+      
+      let requesterData = null;
+      if (requestedBy) {
+        const { password, ...requesterWithoutPassword } = requestedBy;
+        requesterData = requesterWithoutPassword;
+      }
+      
+      // Construct the complete purchase order object with all related data
+      const purchaseOrderWithDetails = {
+        ...purchaseOrder,
+        requisition,
+        project,
+        supplier,
+        items,
+        user: approverData,
+        requestedBy: requesterData
+      };
+      
+      res.json(purchaseOrderWithDetails);
     } catch (error) {
-      console.error("Error fetching purchase order:", error);
-      res.status(500).json({ message: "Failed to fetch purchase order" });
+      console.error("Error fetching purchase order details:", error);
+      res.status(500).json({ message: "Failed to fetch purchase order details" });
     }
   });
   

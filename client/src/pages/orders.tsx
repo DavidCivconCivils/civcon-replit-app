@@ -46,6 +46,14 @@ export default function Orders() {
   // Fetch order details for preview
   const { data: orderDetails, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['/api/purchase-orders', selectedOrder],
+    queryFn: async () => {
+      if (!selectedOrder) return null;
+      const response = await fetch(`/api/purchase-orders/${selectedOrder}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch purchase order: ${response.statusText}`);
+      }
+      return response.json();
+    },
     enabled: selectedOrder !== null,
   });
 
