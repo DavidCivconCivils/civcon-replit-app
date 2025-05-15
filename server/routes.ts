@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { z } from "zod";
 import { insertProjectSchema, insertSupplierSchema, insertRequisitionSchema, insertRequisitionItemSchema, insertPurchaseOrderSchema } from "@shared/schema";
 import { ZodError } from "zod";
