@@ -196,14 +196,6 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       {/* Action Buttons (only visible in non-print mode) */}
       <div className="no-print flex justify-end space-x-3 mt-6">
         <Button 
-          onClick={onPrint} 
-          variant="outline"
-          disabled={!onPrint}
-        >
-          <Printer className="mr-2 h-4 w-4" />
-          Print
-        </Button>
-        <Button 
           onClick={onExportPdf} 
           variant="outline"
           disabled={!onExportPdf}

@@ -126,6 +126,13 @@ export default function Requisitions() {
       emailRequisitionMutation.mutate(selectedRequisition);
     }
   };
+  
+  const handleEditRequisition = (id: number) => {
+    // Here you would typically load the requisition and populate a form
+    // For now, just show the form as if creating a new requisition
+    setShowForm(true);
+    // In a full implementation, you'd set the form data to match the existing requisition
+  };
 
   return (
     <div className="space-y-6">
@@ -219,7 +226,17 @@ export default function Requisitions() {
                                     <Edit size={16} />
                                   </Button>
                                 )}
-
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-primary hover:text-primary-dark"
+                                  onClick={() => {
+                                    setSelectedRequisition(req.id);
+                                    emailRequisitionMutation.mutate(req.id);
+                                  }}
+                                >
+                                  <Mail size={16} />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
