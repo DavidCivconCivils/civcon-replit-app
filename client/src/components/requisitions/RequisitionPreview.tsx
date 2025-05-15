@@ -23,6 +23,7 @@ interface RequisitionPreviewProps {
     deliveryAddress: string;
     deliveryInstructions?: string;
     status?: string;
+    rejectionReason?: string;
     items: {
       description: string;
       quantity: number;
@@ -160,6 +161,14 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           </div>
         )}
       </div>
+      
+      {/* Rejection Reason (if rejected) */}
+      {data.status === "rejected" && data.rejectionReason && (
+        <div className="bg-red-50 p-4 rounded-md mb-6 border border-red-200">
+          <h4 className="font-medium mb-2 text-red-800">Rejection Reason</h4>
+          <p className="text-red-700">{data.rejectionReason}</p>
+        </div>
+      )}
       
       {/* Terms and Conditions */}
       <div className="bg-neutral p-4 rounded-md mb-6">
