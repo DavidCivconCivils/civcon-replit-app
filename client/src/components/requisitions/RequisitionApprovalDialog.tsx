@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
@@ -27,6 +28,8 @@ export default function RequisitionApprovalDialog({
   onClose
 }: RequisitionApprovalDialogProps) {
   const [poNumber, setPoNumber] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectionForm, setShowRejectionForm] = useState(false);
   const { toast } = useToast();
 
   const approveMutation = useMutation({
@@ -61,12 +64,13 @@ export default function RequisitionApprovalDialog({
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (requisitionId: number) => {
+    mutationFn: async ({ requisitionId, reason }: { requisitionId: number, reason: string }) => {
       const response = await apiRequest(
         "PUT",
         `/api/requisitions/${requisitionId}/status`,
         {
-          status: "rejected"
+          status: "rejected",
+          rejectionReason: reason
         }
       );
       return await response.json();
@@ -74,7 +78,7 @@ export default function RequisitionApprovalDialog({
     onSuccess: () => {
       toast({
         title: "Requisition rejected",
-        description: "The requisition has been rejected.",
+        description: "The requisition has been rejected with a reason.",
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
@@ -104,13 +108,29 @@ export default function RequisitionApprovalDialog({
     approveMutation.mutate({ requisitionId, poNumber });
   };
 
+  const handleShowRejectForm = () => {
+    setShowRejectionForm(true);
+  };
+
   const handleReject = () => {
     if (!requisitionId) return;
-    rejectMutation.mutate(requisitionId);
+    
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for rejection",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    rejectMutation.mutate({ requisitionId, reason: rejectionReason });
   };
 
   const handleClose = () => {
     setPoNumber("");
+    setRejectionReason("");
+    setShowRejectionForm(false);
     onClose();
   };
 
@@ -118,59 +138,99 @@ export default function RequisitionApprovalDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Approve Requisition</DialogTitle>
-          <DialogDescription>
-            Enter a purchase order number to approve this requisition or reject it.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="poNumber">Purchase Order Number</Label>
-            <Input
-              id="poNumber"
-              placeholder="Enter PO number"
-              value={poNumber}
-              onChange={(e) => setPoNumber(e.target.value)}
-              disabled={isLoading}
-            />
+      {showRejectionForm ? (
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Requisition</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this requisition. This will be visible to the requester.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="rejectionReason">Rejection Reason</Label>
+              <Textarea
+                id="rejectionReason"
+                placeholder="Enter reason for rejection..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                disabled={isLoading}
+                rows={4}
+              />
+            </div>
           </div>
-        </div>
-        <DialogFooter className="flex justify-between sm:justify-between">
-          <div>
-            <Button
-              type="button"
-              variant="destructive"
+          <DialogFooter className="flex sm:justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRejectionForm(false)}
+              disabled={isLoading}
+            >
+              Back
+            </Button>
+            <Button 
               onClick={handleReject}
               disabled={isLoading}
+              variant="destructive"
             >
               {rejectMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Reject
+              Confirm Rejection
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      ) : (
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Requisition</DialogTitle>
+            <DialogDescription>
+              Enter a purchase order number to approve this requisition or reject it with a reason.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="poNumber">Purchase Order Number</Label>
+              <Input
+                id="poNumber"
+                placeholder="Enter PO number"
+                value={poNumber}
+                onChange={(e) => setPoNumber(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleApprove}
-              disabled={isLoading}
-            >
-              {approveMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : null}
-              Approve
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <div>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleShowRejectForm}
+                disabled={isLoading}
+              >
+                Reject
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleApprove}
+                disabled={isLoading}
+              >
+                {approveMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
+                Approve
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }
