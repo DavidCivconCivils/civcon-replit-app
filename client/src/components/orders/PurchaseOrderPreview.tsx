@@ -68,7 +68,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Date Issued:</p>
-          <p className="font-medium">{formatDate(data.purchaseOrder.issueDate)}</p>
+          <p className="font-medium">{data.purchaseOrder && data.purchaseOrder.issueDate ? formatDate(data.purchaseOrder.issueDate) : "Not specified"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Approved By:</p>
@@ -81,7 +81,9 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         <div>
           <p className="text-sm text-neutral-textLight">Status:</p>
           <p className="font-medium text-status-success">
-            {data.purchaseOrder.status.charAt(0).toUpperCase() + data.purchaseOrder.status.slice(1)}
+            {data.purchaseOrder && data.purchaseOrder.status 
+              ? data.purchaseOrder.status.charAt(0).toUpperCase() + data.purchaseOrder.status.slice(1) 
+              : "Not specified"}
           </p>
         </div>
       </div>
