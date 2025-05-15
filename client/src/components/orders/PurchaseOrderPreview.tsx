@@ -20,6 +20,8 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
   // Add null checks/defaults to prevent errors
   const items = data.items || [];
   const requisition = data.requisition || {};
+  const project = data.project || {};
+  const supplier = data.supplier || {};
   const totalAmount = data.totalAmount?.toString() || "0";
   
   return (
@@ -40,8 +42,8 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         <div>
           <p className="text-sm text-neutral-textLight">Project:</p>
           <p className="font-medium">
-            {data.project 
-              ? `${data.project.name} (${data.project.contractNumber})` 
+            {project.name 
+              ? `${project.name} (${project.contractNumber || 'No contract'})` 
               : "Not specified"}
           </p>
         </div>
