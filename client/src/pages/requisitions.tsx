@@ -276,7 +276,8 @@ export default function Requisitions() {
                             <TableCell>{formatCurrency(parseFloat(req.totalAmount.toString()))}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 text-xs rounded-full ${bg} ${text}`}>
-                                {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                {req.status === "pending" ? "Sent for Approval" : 
+                                 req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
