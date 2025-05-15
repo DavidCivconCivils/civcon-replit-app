@@ -47,6 +47,40 @@ export default function Requisitions() {
   const { data: requisitions, isLoading } = useQuery<Requisition[]>({
     queryKey: ['/api/requisitions'],
   });
+  
+  // Fetch projects data
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+  });
+
+  // Fetch suppliers data
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ['/api/suppliers'],
+  });
+
+  // Mutation for cancelling requisitions
+  const cancelRequisitionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("PUT", `/api/requisitions/${id}/status`, { status: "cancelled" });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Requisition cancelled",
+        description: "The requisition has been successfully cancelled.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
+      setShowCancelDialog(false);
+      setRequisitionToCancel(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error cancelling requisition",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Fetch requisition details for preview
   const { data: requisitionDetails, isLoading: isLoadingDetails } = useQuery<any>({
@@ -221,8 +255,8 @@ export default function Requisitions() {
                         return (
                           <TableRow key={req.id}>
                             <TableCell className="font-medium font-mono">{req.requisitionNumber}</TableCell>
-                            <TableCell>{req.projectId}</TableCell>
-                            <TableCell>{req.supplierId}</TableCell>
+                            <TableCell>{projects.find(p => p.id === req.projectId)?.name || `Project ${req.projectId}`}</TableCell>
+                            <TableCell>{suppliers.find(s => s.id === req.supplierId)?.name || `Supplier ${req.supplierId}`}</TableCell>
                             <TableCell>{formatDate(req.requestDate)}</TableCell>
                             <TableCell>{formatCurrency(parseFloat(req.totalAmount.toString()))}</TableCell>
                             <TableCell>
@@ -261,6 +295,19 @@ export default function Requisitions() {
                                 >
                                   <Mail size={16} />
                                 </Button>
+                                {req.status === "pending" && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-destructive hover:text-destructive/80"
+                                    onClick={() => {
+                                      setRequisitionToCancel(req);
+                                      setShowCancelDialog(true);
+                                    }}
+                                  >
+                                    <XCircle size={16} />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -306,6 +353,56 @@ export default function Requisitions() {
               ) : (
                 <p className="text-neutral-textLight">Could not load requisition details.</p>
               )}
+            </DialogContent>
+          </Dialog>
+          
+          {/* Cancel Requisition Dialog */}
+          <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cancel Requisition</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to cancel this requisition? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {requisitionToCancel && (
+                <div className="py-4">
+                  <p className="text-sm font-semibold">Requisition Details:</p>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <p>Requisition #: <span className="font-mono">{requisitionToCancel.requisitionNumber}</span></p>
+                    <p>Project: {projects.find(p => p.id === requisitionToCancel.projectId)?.name || `Project ${requisitionToCancel.projectId}`}</p>
+                    <p>Supplier: {suppliers.find(s => s.id === requisitionToCancel.supplierId)?.name || `Supplier ${requisitionToCancel.supplierId}`}</p>
+                    <p>Total: {formatCurrency(parseFloat(requisitionToCancel.totalAmount.toString()))}</p>
+                  </div>
+                </div>
+              )}
+              
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCancelDialog(false);
+                    setRequisitionToCancel(null);
+                  }}
+                >
+                  No, Keep it
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => requisitionToCancel && cancelRequisitionMutation.mutate(requisitionToCancel.id)}
+                  disabled={cancelRequisitionMutation.isPending}
+                >
+                  {cancelRequisitionMutation.isPending ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent rounded-full"></span>
+                      Cancelling...
+                    </span>
+                  ) : (
+                    "Yes, Cancel Requisition"
+                  )}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </>

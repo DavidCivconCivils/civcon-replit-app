@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { status } = req.body;
-      if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
+      if (!status || !['pending', 'approved', 'rejected', 'cancelled'].includes(status)) {
         return res.status(400).json({ message: "Invalid status value" });
       }
       
