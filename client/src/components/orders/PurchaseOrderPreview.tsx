@@ -35,7 +35,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
           <p className="text-sm text-neutral-textLight font-mono">{data.poNumber}</p>
         </div>
         <div className="h-16 w-48 flex items-center justify-center">
-          <img src="/assets/Civcon Logo.png" alt="Civcon Logo" className="h-full object-contain" />
+          <img src="/Civcon Civils Logo.png" alt="Civcon Logo" className="h-full object-contain" />
         </div>
       </div>
       

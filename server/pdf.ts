@@ -26,12 +26,18 @@ export async function generatePDF(
 ): Promise<Buffer> {
   const doc = new jsPDF();
   
-  // Add company logo (placeholder)
-  doc.setFillColor(200, 200, 200);
-  doc.rect(140, 10, 50, 20, 'F');
-  doc.setTextColor(80, 80, 80);
-  doc.setFontSize(12);
-  doc.text('CIVCON LOGO', 150, 22);
+  // Add company logo
+  try {
+    // Get logo from the public directory
+    doc.addImage('public/Civcon Civils Logo.png', 'PNG', 140, 10, 50, 20);
+    console.log('Logo added to PDF successfully');
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+    // Fallback text if logo can't be loaded
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CIVCON CIVIL ENGINEERING', 140, 20);
+  }
   
   // Document header
   doc.setFontSize(18);

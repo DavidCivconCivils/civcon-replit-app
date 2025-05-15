@@ -908,9 +908,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         approver: user
       });
       
-      // Send email to supplier
+      // Get the requester (person who raised the requisition)
+      const requester = await storage.getUser(requisition.requestedById);
+      if (!requester) {
+        return res.status(400).json({ message: "Requester not found" });
+      }
+      
+      // Define recipients
+      const procurementEmail = 'procurement@civconcivils.co.uk';
+      const requesterEmail = requester.email;
+      
+      console.log(`Sending purchase order email to: ${supplier.email}, ${procurementEmail}, ${requesterEmail}`);
+      
+      // Send email to supplier, procurement team, and requester
       const emailResult = await sendEmail({
         to: supplier.email,
+        // Add CC for procurement team and requester
+        cc: [procurementEmail, requesterEmail].filter(Boolean).join(','),
         subject: `Purchase Order: ${purchaseOrder.poNumber}`,
         text: `A purchase order (${purchaseOrder.poNumber}) has been issued for ${project.name}. Please see attached PDF for details.`,
         html: `
@@ -919,10 +933,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <p>We are pleased to issue the attached purchase order for the following:</p>
           <ul>
             <li><strong>Purchase Order Number:</strong> ${purchaseOrder.poNumber}</li>
-            <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+            <li><strong>Project:</strong> ${project.name} (${project.contractNumber || 'No contract number'})</li>
             <li><strong>Total Amount:</strong> £${purchaseOrder.totalAmount}</li>
           </ul>
           <p>Please review the attached purchase order for complete details.</p>
+          <p>For any questions, please contact us at ${procurementEmail}.</p>
           <p>Regards,<br>Civcon Office</p>
         `,
         attachments: [
