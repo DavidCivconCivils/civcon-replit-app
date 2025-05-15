@@ -1,41 +1,15 @@
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, FileDown, Mail } from "lucide-react";
-import { User } from "@shared/schema";
+import { User, PurchaseOrder, Requisition, Project, Supplier, RequisitionItem } from "@shared/schema";
 
 interface PurchaseOrderPreviewProps {
-  data: {
-    poNumber: string;
-    purchaseOrder: {
-      issueDate: string;
-      status: string;
-      totalAmount: string;
-    };
-    requisition: {
-      requisitionNumber: string;
-      requestDate: string;
-      deliveryDate: string;
-      deliveryAddress: string;
-      deliveryInstructions?: string;
-    };
-    items: {
-      description: string;
-      quantity: number;
-      unit: string;
-      unitPrice: string;
-      totalPrice: string;
-    }[];
-    project?: {
-      name: string;
-      contractNumber: string;
-    };
-    supplier?: {
-      name: string;
-      address: string;
-      email: string;
-    };
-    user?: User | null;
+  data: PurchaseOrder & {
+    requisition?: Requisition;
+    items?: RequisitionItem[];
+    project?: Project;
+    supplier?: Supplier;
+    user?: User;
   };
   onExportPdf?: () => void;
   onPrint?: () => void;
@@ -43,6 +17,11 @@ interface PurchaseOrderPreviewProps {
 }
 
 export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEmail }: PurchaseOrderPreviewProps) {
+  // Add null checks/defaults to prevent errors
+  const items = data.items || [];
+  const requisition = data.requisition || {};
+  const totalAmount = data.totalAmount?.toString() || "0";
+  
   return (
     <div className="print-container">
       {/* Purchase Order Header */}
@@ -68,7 +47,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Date Issued:</p>
-          <p className="font-medium">{data.purchaseOrder && data.purchaseOrder.issueDate ? formatDate(data.purchaseOrder.issueDate) : "Not specified"}</p>
+          <p className="font-medium">{data.issueDate ? formatDate(data.issueDate) : "Not specified"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Purchase Order Number:</p>
@@ -77,8 +56,8 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
         <div>
           <p className="text-sm text-neutral-textLight">Status:</p>
           <p className="font-medium text-status-success">
-            {data.purchaseOrder && data.purchaseOrder.status 
-              ? data.purchaseOrder.status.charAt(0).toUpperCase() + data.purchaseOrder.status.slice(1) 
+            {data.status 
+              ? data.status.charAt(0).toUpperCase() + data.status.slice(1) 
               : "Not specified"}
           </p>
         </div>
@@ -113,26 +92,34 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-secondary">
-            {data.items && data.items.map((item, index) => (
-              <tr key={index}>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
-                <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.quantity}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.unit}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                  {formatCurrency(parseFloat(item.unitPrice))}
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
-                  {formatCurrency(parseFloat(item.totalPrice))}
+            {items.length > 0 ? (
+              items.map((item, index) => (
+                <tr key={index}>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
+                  <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.quantity}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{item.unit}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
+                    {formatCurrency(parseFloat(item.unitPrice))}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
+                    {formatCurrency(parseFloat(item.totalPrice))}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-sm text-neutral-textLight">
+                  No items found in this purchase order.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
           <tfoot className="bg-neutral-secondary">
             <tr>
               <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Subtotal:</td>
               <td className="px-4 py-2 text-sm font-medium">
-                {formatCurrency(parseFloat(data.purchaseOrder.totalAmount))}
+                {formatCurrency(parseFloat(totalAmount))}
               </td>
             </tr>
           </tfoot>
@@ -143,16 +130,16 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
-          <p className="font-medium">{data.requisition.deliveryAddress}</p>
+          <p className="font-medium">{requisition.deliveryAddress || "N/A"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Required By:</p>
-          <p className="font-medium">{formatDate(data.requisition.deliveryDate)}</p>
+          <p className="font-medium">{requisition.deliveryDate ? formatDate(requisition.deliveryDate) : "N/A"}</p>
         </div>
-        {data.requisition.deliveryInstructions && (
+        {requisition.deliveryInstructions && (
           <div className="col-span-2">
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
-            <p>{data.requisition.deliveryInstructions}</p>
+            <p>{requisition.deliveryInstructions}</p>
           </div>
         )}
       </div>
@@ -180,12 +167,12 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
                 : "Finance Team"}
             </p>
             <p className="text-xs text-neutral-textLight">Finance Team</p>
-            <p className="text-xs text-neutral-textLight">{formatDate(data.purchaseOrder.issueDate)}</p>
+            <p className="text-xs text-neutral-textLight">{data.issueDate ? formatDate(data.issueDate) : "N/A"}</p>
           </div>
           <div>
             <p className="text-sm text-neutral-textLight">Original Requisition:</p>
-            <p className="font-medium">{data.requisition.requisitionNumber}</p>
-            <p className="text-xs text-neutral-textLight">Date: {formatDate(data.requisition.requestDate)}</p>
+            <p className="font-medium">{requisition.requisitionNumber || "N/A"}</p>
+            <p className="text-xs text-neutral-textLight">Date: {requisition.requestDate ? formatDate(requisition.requestDate) : "N/A"}</p>
           </div>
         </div>
       </div>
