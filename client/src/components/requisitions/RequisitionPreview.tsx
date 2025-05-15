@@ -111,7 +111,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-secondary">
-            {data.items.map((item, index) => (
+            {data.items && data.items.length > 0 ? data.items.map((item, index) => (
               <tr key={index}>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
                 <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
@@ -124,13 +124,19 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
                   {formatCurrency(parseFloat(item.totalPrice))}
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={5} className="px-4 py-4 text-center text-sm text-neutral-textLight">
+                  No items found in this requisition.
+                </td>
+              </tr>
+            )}
           </tbody>
           <tfoot className="bg-neutral-secondary">
             <tr>
               <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Subtotal:</td>
               <td className="px-4 py-2 text-sm font-medium">
-                {formatCurrency(parseFloat(data.totalAmount))}
+                {data.totalAmount ? formatCurrency(parseFloat(data.totalAmount)) : '£0.00'}
               </td>
             </tr>
           </tfoot>
