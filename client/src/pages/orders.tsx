@@ -446,7 +446,18 @@ export default function Orders() {
               <p className="mt-2 text-neutral-textLight">Loading details...</p>
             </div>
           ) : orderDetails ? (
-            <PurchaseOrderPreview data={orderDetails} />
+            <PurchaseOrderPreview 
+              data={orderDetails} 
+              onExportPdf={() => generatePdfMutation.mutate(orderDetails.id)}
+              onPrint={() => window.print()}
+              onEmail={() => {
+                toast({
+                  title: "Sending email...",
+                  description: "Emailing purchase order to supplier",
+                });
+                emailPurchaseOrderMutation.mutate(orderDetails.id);
+              }}
+            />
           ) : (
             <p className="text-neutral-textLight">Could not load purchase order details.</p>
           )}
