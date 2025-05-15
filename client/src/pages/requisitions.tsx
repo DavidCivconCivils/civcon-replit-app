@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Requisition } from "@shared/schema";
 import RequisitionForm from "@/components/requisitions/RequisitionForm";
@@ -11,7 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { Plus, Search, Eye, Edit, Printer, FileText } from "lucide-react";
+import { Plus, Search, Eye, Edit, Printer, FileText, Mail } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Requisitions() {
   const [location, setLocation] = useLocation();
@@ -20,6 +22,7 @@ export default function Requisitions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequisition, setSelectedRequisition] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const { toast } = useToast();
 
   // Check URL params
   useEffect(() => {
@@ -85,6 +88,28 @@ export default function Requisitions() {
     setSelectedRequisition(null);
   };
 
+  // Email requisition mutation
+  const emailRequisitionMutation = useMutation({
+    mutationFn: async (requisitionId: number) => {
+      const res = await apiRequest("POST", `/api/requisitions/${requisitionId}/email`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Email sent",
+        description: "The requisition has been emailed to finance successfully.",
+        variant: "default"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send email",
+        description: error.message || "There was an error sending the email. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Handle print functionality
   const handlePrintRequisition = () => {
     window.print();
@@ -94,6 +119,12 @@ export default function Requisitions() {
     // This would typically invoke a server endpoint to generate and download a PDF
     // For now, we'll simulate it with an alert
     alert('PDF export functionality would be implemented here.');
+  };
+  
+  const handleEmailRequisition = () => {
+    if (selectedRequisition) {
+      emailRequisitionMutation.mutate(selectedRequisition);
+    }
   };
 
   return (
@@ -236,6 +267,7 @@ export default function Requisitions() {
                   data={requisitionDetails} 
                   onPrint={handlePrintRequisition}
                   onExportPdf={handleExportPdf}
+                  onEmail={handleEmailRequisition}
                 />
               ) : (
                 <p className="text-neutral-textLight">Could not load requisition details.</p>
