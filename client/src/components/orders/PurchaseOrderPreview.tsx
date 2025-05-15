@@ -144,6 +144,7 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onEmail }: Pur
               // Calculate each VAT type amount
               let vat20Amount = 0;
               let vatCisAmount = 0;
+              let vat0Items = false;
               
               items.forEach(item => {
                 const quantity = Number(item.quantity) || 0;
@@ -154,8 +155,9 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onEmail }: Pur
                   vat20Amount += itemSubtotal * 0.2;
                 } else if (item.vatType === "20% RC CIS (0%)") {
                   vatCisAmount += itemSubtotal * 0.2;
+                } else if (item.vatType === "VAT 0%") {
+                  vat0Items = true;
                 }
-                // VAT 0% doesn't add any VAT
               });
               
               return (
@@ -166,9 +168,17 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onEmail }: Pur
                       {formatCurrency(subtotal)}
                     </td>
                   </tr>
+                  {vat0Items && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">No VAT:</td>
+                      <td className="px-4 py-2 text-sm font-medium">
+                        {formatCurrency(0)}
+                      </td>
+                    </tr>
+                  )}
                   {vat20Amount > 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ 20%:</td>
+                      <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT 20%:</td>
                       <td className="px-4 py-2 text-sm font-medium">
                         {formatCurrency(vat20Amount)}
                       </td>
@@ -177,13 +187,13 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onEmail }: Pur
                   {vatCisAmount > 0 && (
                     <>
                       <tr>
-                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ 20% (RC CIS):</td>
+                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT 20%:</td>
                         <td className="px-4 py-2 text-sm font-medium">
                           {formatCurrency(vatCisAmount)}
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ -20% (RC CIS):</td>
+                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT -20%:</td>
                         <td className="px-4 py-2 text-sm font-medium">
                           {formatCurrency(-vatCisAmount)}
                         </td>

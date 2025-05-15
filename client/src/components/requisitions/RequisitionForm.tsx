@@ -761,14 +761,114 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t bg-neutral-secondary/20">
-                        <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                          Total Amount:
-                        </td>
-                        <td className="px-4 py-2 font-bold text-primary">
-                          {formatCurrency(parseFloat(form.getValues().totalAmount))}
-                        </td>
-                      </tr>
+                      {(() => {
+                        // Calculate subtotal and various VAT amounts
+                        const items = form.getValues("items");
+                        const subtotal = items.reduce((sum, item) => {
+                          const quantity = Number(item.quantity) || 0;
+                          const unitPrice = parseFloat(item.unitPrice) || 0;
+                          return sum + (quantity * unitPrice);
+                        }, 0);
+                        
+                        // Group items by VAT type and calculate amounts
+                        const vatAmounts = {
+                          "VAT 0%": 0,
+                          "VAT 20%": 0,
+                          "20% RC CIS (0%)": 0
+                        };
+                        
+                        items.forEach(item => {
+                          const quantity = Number(item.quantity) || 0;
+                          const unitPrice = parseFloat(item.unitPrice) || 0;
+                          const itemSubtotal = quantity * unitPrice;
+                          const vatType = item.vatType || "VAT 20%";
+                          
+                          if (vatType === "VAT 20%") {
+                            vatAmounts["VAT 20%"] += itemSubtotal * 0.2;
+                          } else if (vatType === "20% RC CIS (0%)") {
+                            vatAmounts["20% RC CIS (0%)"] += itemSubtotal * 0.2;
+                          }
+                        });
+                        
+                        const rows = [];
+                        
+                        // Add subtotal row
+                        rows.push(
+                          <tr key="subtotal" className="border-t">
+                            <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                              Subtotal:
+                            </td>
+                            <td className="px-4 py-2 font-medium">
+                              {formatCurrency(subtotal)}
+                            </td>
+                          </tr>
+                        );
+                        
+                        // Add VAT summary rows based on what's used
+                        if (vatAmounts["VAT 0%"] > 0) {
+                          rows.push(
+                            <tr key="vat-0" className="border-t-0">
+                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                                No VAT:
+                              </td>
+                              <td className="px-4 py-2 font-medium">
+                                {formatCurrency(0)}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        if (vatAmounts["VAT 20%"] > 0) {
+                          rows.push(
+                            <tr key="vat-20" className="border-t-0">
+                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                                VAT 20%:
+                              </td>
+                              <td className="px-4 py-2 font-medium">
+                                {formatCurrency(vatAmounts["VAT 20%"])}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        if (vatAmounts["20% RC CIS (0%)"] > 0) {
+                          rows.push(
+                            <tr key="vat-cis-1" className="border-t-0">
+                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                                VAT 20%:
+                              </td>
+                              <td className="px-4 py-2 font-medium">
+                                {formatCurrency(vatAmounts["20% RC CIS (0%)"])}
+                              </td>
+                            </tr>
+                          );
+                          
+                          rows.push(
+                            <tr key="vat-cis-2" className="border-t-0">
+                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                                VAT -20%:
+                              </td>
+                              <td className="px-4 py-2 font-medium">
+                                {formatCurrency(-vatAmounts["20% RC CIS (0%)"])}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        // Add total row
+                        rows.push(
+                          <tr key="total" className="border-t bg-neutral-secondary/20">
+                            <td colSpan={5} className="px-4 py-2 text-right font-medium">
+                              Total Amount:
+                            </td>
+                            <td className="px-4 py-2 font-bold text-primary">
+                              {formatCurrency(parseFloat(form.getValues().totalAmount))}
+                            </td>
+                          </tr>
+                        );
+                        
+                        return rows;
+                      })()}
                     </tfoot>
                   </table>
                 </div>
