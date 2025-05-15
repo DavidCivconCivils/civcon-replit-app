@@ -25,7 +25,7 @@ function ProtectedRoute({ component: Component, ...rest }: { component: React.Co
   }
 
   if (!isAuthenticated) {
-    setLocation("/login");
+    setLocation("/"); // Redirect to the login page which is now the root
     return null;
   }
 
@@ -36,11 +36,11 @@ function Router() {
   return (
     <Switch>
       {/* Public routes */}
+      <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
-      <Route path="/auth" component={Login} />
       
       {/* Protected routes */}
-      <Route path="/">
+      <Route path="/dashboard">
         <MainLayout>
           <ProtectedRoute component={Dashboard} />
         </MainLayout>

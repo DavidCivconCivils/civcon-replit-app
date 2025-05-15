@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <div className="px-2 space-y-1">
-            <NavLink href="/" icon={<LayoutDashboard size={18} />} text="Dashboard" active={location === "/"} />
+            <NavLink href="/dashboard" icon={<LayoutDashboard size={18} />} text="Dashboard" active={location === "/dashboard"} />
             <NavLink href="/projects" icon={<HardHat size={18} />} text="Projects" active={location === "/projects"} />
             <NavLink href="/suppliers" icon={<Building2 size={18} />} text="Suppliers" active={location === "/suppliers"} />
             <NavLink href="/requisitions" icon={<FileText size={18} />} text="Requisitions" active={location === "/requisitions"} />
@@ -66,13 +66,15 @@ export default function Sidebar({ isOpen }: SidebarProps) {
               </p>
             </div>
             <div className="ml-auto flex gap-1">
-              <a
-                href="/api/logout"
+              <button
+                onClick={() => {
+                  window.location.href = "/api/logout";
+                }}
                 className="p-1 rounded-full hover:bg-primary-light"
                 title="Logout"
               >
                 <LogOut size={16} />
-              </a>
+              </button>
             </div>
           </div>
         </div>

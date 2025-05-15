@@ -73,7 +73,7 @@ export default function Login() {
   useEffect(() => {
     // If user is already authenticated, redirect to dashboard
     if (isAuthenticated) {
-      setLocation("/");
+      setLocation("/dashboard");
     }
   }, [isAuthenticated, setLocation]);
 
