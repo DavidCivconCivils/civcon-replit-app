@@ -677,7 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (status === 'rejected') {
         // Send email notification about rejection
-        const userId = req.user.id; // We're using standard auth, so just use id
+        // Handle both standard auth and claims-based auth
+        const userId = req.user.id || req.user.claims?.sub;
         const user = await storage.getUser(userId);
         const requester = await storage.getUser(requisition.requestedById);
         const project = await storage.getProject(requisition.projectId);

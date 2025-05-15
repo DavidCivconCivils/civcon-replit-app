@@ -289,7 +289,10 @@ export default function Requisitions() {
                                 >
                                   <Eye size={16} />
                                 </Button>
+                                {/* Only allow creators or admin/finance to edit pending requisitions */}
                                 {req.status === "pending" && (
+                                  req.requestedById === user?.id || user?.role === "finance" || user?.role === "admin"
+                                ) && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
@@ -299,17 +302,20 @@ export default function Requisitions() {
                                     <Edit size={16} />
                                   </Button>
                                 )}
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-primary hover:text-primary-dark"
-                                  onClick={() => {
-                                    setSelectedRequisition(req.id);
-                                    emailRequisitionMutation.mutate(req.id);
-                                  }}
-                                >
-                                  <Mail size={16} />
-                                </Button>
+                                {/* Allow creator or finance/admin to email the requisition */}
+                                {(req.requestedById === user?.id || user?.role === "finance" || user?.role === "admin") && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-primary hover:text-primary-dark"
+                                    onClick={() => {
+                                      setSelectedRequisition(req.id);
+                                      emailRequisitionMutation.mutate(req.id);
+                                    }}
+                                  >
+                                    <Mail size={16} />
+                                  </Button>
+                                )}
                                 {/* Only allow creators or admin/finance to cancel pending requisitions */}
                                 {req.status === "pending" && (
                                   req.requestedById === user?.id || user?.role === "finance" || user?.role === "admin"
