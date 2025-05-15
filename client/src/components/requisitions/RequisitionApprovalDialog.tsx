@@ -75,7 +75,7 @@ export default function RequisitionApprovalDialog({
       toast({
         title: "Requisition rejected",
         description: "The requisition has been rejected.",
-        variant: "success",
+        variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
       handleClose();
