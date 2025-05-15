@@ -99,6 +99,12 @@ export default function Requisitions() {
   const { data: requisitionDetails, isLoading: isLoadingDetails } = useQuery<any>({
     queryKey: ['/api/requisitions', selectedRequisition],
     enabled: selectedRequisition !== null,
+    onSuccess: (data) => {
+      console.log('Loaded requisition details:', data);
+    },
+    onError: (error) => {
+      console.error('Failed to load requisition details:', error);
+    }
   });
 
   // Filter and sort requisitions
