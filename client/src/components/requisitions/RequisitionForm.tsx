@@ -82,29 +82,35 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
 
   // Watch items to calculate total amount in real-time
   const watchedItems = form.watch("items");
-  const watchQuantities = form.watch("items.*.quantity");
-  const watchUnitPrices = form.watch("items.*.unitPrice");
   
-  useEffect(() => {
-    // Calculate total amount when items change
-    const totalAmount = watchedItems.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      const totalPrice = quantity * unitPrice;
+  // This function will be called directly when quantity or price changes
+  const calculateTotals = () => {
+    setTimeout(() => {
+      const items = form.getValues("items");
+      const totalAmount = items.reduce((sum, item, index) => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        const totalPrice = quantity * unitPrice;
+        
+        // Update item total price (with 2 decimal places for British pounds)
+        form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2), {
+          shouldValidate: true
+        });
+        
+        return sum + totalPrice;
+      }, 0);
       
-      // Update item total price (with 2 decimal places for British pounds)
-      form.setValue(`items.${watchedItems.indexOf(item)}.totalPrice`, totalPrice.toFixed(2), {
+      // Set the total amount with 2 decimal places for British pounds
+      form.setValue("totalAmount", totalAmount.toFixed(2), {
         shouldValidate: true
       });
-      
-      return sum + totalPrice;
     }, 0);
-    
-    // Set the total amount with 2 decimal places for British pounds
-    form.setValue("totalAmount", totalAmount.toFixed(2), {
-      shouldValidate: true
-    });
-  }, [watchedItems, watchQuantities, watchUnitPrices, form]);
+  };
+  
+  // Still keep this effect for when items are added/removed
+  useEffect(() => {
+    calculateTotals();
+  }, [watchedItems]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -131,7 +137,18 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   });
 
   const onSubmit = (data: FormValues) => {
-    createMutation.mutate(data);
+    // Make sure we have the user ID
+    if (user) {
+      data.requestedById = user.id;
+      console.log("Submitting form data:", data);
+      createMutation.mutate(data);
+    } else {
+      toast({
+        title: "Error",
+        description: "User information is missing. Please try logging in again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const addItem = () => {
@@ -384,7 +401,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   placeholder="Qty"
                                   onChange={(e) => {
                                     field.onChange(e);
-                                    calculateItemTotal(index);
+                                    calculateTotals();
                                   }}
                                 />
                               )}
@@ -431,7 +448,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   placeholder="0.00"
                                   onChange={(e) => {
                                     field.onChange(e);
-                                    calculateItemTotal(index);
+                                    calculateTotals();
                                   }}
                                 />
                               )}
@@ -684,9 +701,22 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                   Back
                 </Button>
                 <Button 
-                  type="submit" 
+                  type="button" 
                   disabled={isPending || !form.watch("terms")}
                   className="bg-primary text-white"
+                  onClick={async () => {
+                    // Manually trigger validation and submit
+                    const isValid = await form.trigger();
+                    if (isValid) {
+                      form.handleSubmit(onSubmit)();
+                    } else {
+                      toast({
+                        title: "Validation Error",
+                        description: "Please fix the form errors before submitting.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 >
                   {isPending ? "Submitting..." : "Submit Requisition"}
                   <Send className="ml-2 h-4 w-4" />
