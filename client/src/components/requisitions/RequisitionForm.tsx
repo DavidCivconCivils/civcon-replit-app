@@ -80,8 +80,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     name: "items",
   });
 
-  // Watch items to calculate total amount in real-time
+  // Watch form fields to update in real-time
   const watchedItems = form.watch("items");
+  const watchedAllFields = form.watch(); // Watch all fields for live preview updates
   
   // This function will be called directly when quantity or price changes
   const calculateTotals = () => {
@@ -107,10 +108,17 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     }, 0);
   };
   
-  // Still keep this effect for when items are added/removed
+  // Keep effect for when items are added/removed
   useEffect(() => {
     calculateTotals();
   }, [watchedItems]);
+  
+  // Force render updates when any field changes
+  const [, forceUpdate] = useState({});
+  useEffect(() => {
+    // This will trigger a re-render with the latest form values
+    forceUpdate({});
+  }, [watchedAllFields]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -379,6 +387,11 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   {...field} 
                                   className="w-full border-0 p-0 focus:ring-0 text-sm text-neutral-text" 
                                   placeholder="Item description..."
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // No need to call calculateTotals since it's not a price/quantity field
+                                    // But the watch will trigger a re-render for the preview
+                                  }}
                                 />
                               )}
                             />
@@ -705,11 +718,30 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                     if (isValid) {
                       form.handleSubmit(onSubmit)();
                     } else {
+                      // Show specific errors
+                      const errors = form.formState.errors;
+                      const errorFields = Object.keys(errors);
+                      
+                      // Create readable error message
+                      let errorMessage = "Please fix the following errors:";
+                      errorFields.forEach(field => {
+                        const error = errors[field];
+                        if (error?.message) {
+                          if (field.includes('items')) {
+                            errorMessage += `\n• Item ${field.split('.')[1]} ${error.message}`;
+                          } else {
+                            errorMessage += `\n• ${field}: ${error.message}`;
+                          }
+                        }
+                      });
+                      
                       toast({
                         title: "Validation Error",
-                        description: "Please fix the form errors before submitting.",
+                        description: errorMessage,
                         variant: "destructive",
                       });
+                      
+                      console.log("Form errors:", errors);
                     }
                   }}
                 >
