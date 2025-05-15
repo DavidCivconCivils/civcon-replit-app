@@ -33,11 +33,11 @@ function getTransporter() {
 
     // For production, use configured email service
     transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.example.com',
+      host: process.env.EMAIL_HOST || 'smtp.civconcivils.co.uk',
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: process.env.EMAIL_SECURE === 'true',
       auth: {
-        user: process.env.EMAIL_USER || 'noreply@civcon.example.com',
+        user: process.env.EMAIL_USER || 'noreply@civconcivils.co.uk',
         pass: process.env.EMAIL_PASS || ''
       }
     });
@@ -51,7 +51,7 @@ export async function sendEmail(options: EmailOptions): Promise<{success: boolea
     const transport = getTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'Civcon Office <noreply@civcon.example.com>',
+      from: process.env.EMAIL_FROM || 'Civcon Office <noreply@civconcivils.co.uk>',
       ...options
     };
     

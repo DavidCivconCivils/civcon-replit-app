@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send email
       const emailResult = await sendEmail({
-        to: 'finance@civcon.example.com',
+        to: 'finance@civconcivils.co.uk',
         subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
         text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
         html: `
