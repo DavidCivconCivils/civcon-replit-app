@@ -120,8 +120,8 @@ export async function generatePDF(
       description: item.description,
       quantity: item.quantity.toString(),
       unit: item.unit,
-      unitPrice: `$${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
-      totalPrice: `$${parseFloat(item.totalPrice.toString()).toFixed(2)}`
+      unitPrice: `£${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
+      totalPrice: `£${parseFloat(item.totalPrice.toString()).toFixed(2)}`
     };
   });
   
@@ -132,7 +132,7 @@ export async function generatePDF(
     startY: 105,
     head: [tableColumns.map(col => col.header)],
     body: tableRows.map(row => tableColumns.map(col => row[col.dataKey as keyof typeof row])),
-    foot: [['', '', '', '', 'Total:', `$${totalAmount}`]],
+    foot: [['', '', '', '', 'Total:', `£${totalAmount}`]],
     theme: 'striped',
     headStyles: {
       fillColor: [26, 82, 118],

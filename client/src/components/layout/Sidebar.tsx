@@ -9,9 +9,8 @@ import {
   Building2, 
   FileText, 
   ShoppingCart, 
-  BarChart3, 
   LogOut, 
-  User
+  Users
 } from "lucide-react";
 
 interface SidebarProps {

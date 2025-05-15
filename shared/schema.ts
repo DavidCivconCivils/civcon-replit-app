@@ -48,6 +48,7 @@ export const projects = pgTable("projects", {
   name: varchar("name", { length: 255 }).notNull(),
   contractNumber: varchar("contract_number", { length: 50 }).notNull().unique(),
   startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
   status: varchar("status", { length: 50 }).notNull().default("active"),
   userId: varchar("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
