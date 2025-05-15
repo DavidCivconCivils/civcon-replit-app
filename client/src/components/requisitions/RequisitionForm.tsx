@@ -90,13 +90,14 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       const unitPrice = Number(item.unitPrice) || 0;
       const totalPrice = quantity * unitPrice;
       
-      // Update item total price
-      form.setValue(`items.${watchedItems.indexOf(item)}.totalPrice`, totalPrice.toString());
+      // Update item total price (with 2 decimal places for British pounds)
+      form.setValue(`items.${watchedItems.indexOf(item)}.totalPrice`, totalPrice.toFixed(2));
       
       return sum + totalPrice;
     }, 0);
     
-    form.setValue("totalAmount", totalAmount.toString());
+    // Set the total amount with 2 decimal places for British pounds
+    form.setValue("totalAmount", totalAmount.toFixed(2));
   }, [watchedItems, form]);
 
   const createMutation = useMutation({
@@ -164,7 +165,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     const quantity = Number(form.getValues(`items.${index}.quantity`)) || 0;
     const unitPrice = Number(form.getValues(`items.${index}.unitPrice`)) || 0;
     const totalPrice = quantity * unitPrice;
-    form.setValue(`items.${index}.totalPrice`, totalPrice.toString());
+    form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2));
   };
 
   const isPending = createMutation.isPending;
