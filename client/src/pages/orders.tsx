@@ -449,7 +449,6 @@ export default function Orders() {
             <PurchaseOrderPreview 
               data={orderDetails} 
               onExportPdf={() => generatePdfMutation.mutate(orderDetails.id)}
-              onPrint={() => window.print()}
               onEmail={() => {
                 toast({
                   title: "Sending email...",

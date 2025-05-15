@@ -28,7 +28,7 @@ export async function generatePDF(
 ): Promise<Buffer> {
   const doc = new jsPDF();
   
-  // Add company logo
+  // Add company logo - with compression to reduce file size
   try {
     // Get absolute path to logo file
     const logoPath = path.resolve('./public/Civcon Civils Logo.png');
@@ -40,9 +40,9 @@ export async function generatePDF(
       const logoData = fs.readFileSync(logoPath, { encoding: 'base64' });
       const imgData = `data:image/png;base64,${logoData}`;
       
-      // Add image using base64 data
-      doc.addImage(imgData, 'PNG', 140, 10, 50, 20);
-      console.log('Logo added to PDF successfully');
+      // Add image using base64 data with compression options
+      doc.addImage(imgData, 'PNG', 140, 10, 50, 20, undefined, 'FAST', 0.5); // Added compression options
+      console.log('Logo added to PDF successfully with compression');
     } else {
       throw new Error('Logo file not found at: ' + logoPath);
     }
@@ -60,13 +60,18 @@ export async function generatePDF(
   doc.setFont('helvetica', 'bold');
   doc.text(type === 'requisition' ? 'Purchase Requisition' : 'Purchase Order', 14, 20);
   
-  // Document number
-  doc.setFontSize(10);
-  doc.setFont('courier', 'normal');
+  // Document number - make it more prominent
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
   const documentNumber = type === 'requisition' 
     ? (data as RequisitionData).requisition.requisitionNumber 
     : (data as PurchaseOrderData).purchaseOrder.poNumber;
-  doc.text(documentNumber, 14, 26);
+  
+  if (type === 'purchaseOrder') {
+    doc.text(`Purchase Order Number: ${documentNumber}`, 14, 26);
+  } else {
+    doc.text(`Requisition Number: ${documentNumber}`, 14, 26);
+  }
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -267,6 +272,10 @@ export async function generatePDF(
     doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy h:mm a')}`, 160, 285);
   }
   
-  // Return PDF as buffer
-  return Buffer.from(doc.output('arraybuffer'));
+  // Return PDF as buffer with compression
+  return Buffer.from(doc.output('arraybuffer', {
+    compress: true,
+    putOnlyUsedFonts: true,
+    precision: 2
+  }));
 }

@@ -12,11 +12,10 @@ interface PurchaseOrderPreviewProps {
     user?: User;
   };
   onExportPdf?: () => void;
-  onPrint?: () => void;
   onEmail?: () => void;
 }
 
-export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEmail }: PurchaseOrderPreviewProps) {
+export default function PurchaseOrderPreview({ data, onExportPdf, onEmail }: PurchaseOrderPreviewProps) {
   console.log("PurchaseOrderPreview data:", data);
   
   // Add null checks/defaults to prevent errors and type safety
@@ -198,15 +197,6 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       
       {/* Action Buttons (only visible in non-print mode) */}
       <div className="no-print flex justify-end space-x-3 mt-6">
-        {onPrint && (
-          <Button 
-            onClick={onPrint} 
-            variant="outline"
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-        )}
         {onExportPdf && (
           <Button 
             onClick={onExportPdf} 
