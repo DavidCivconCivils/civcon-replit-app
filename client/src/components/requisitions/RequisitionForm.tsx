@@ -53,7 +53,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['/api/suppliers'],
   });
-
+  
   // Initialize form with user ID already set
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,7 +61,8 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       projectId: undefined,
       supplierId: undefined,
       requestDate: new Date().toISOString().split('T')[0],
-      deliveryDate: "",
+      // Set a default delivery date to 7 days from now
+      deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       deliveryAddress: "",
       deliveryInstructions: "",
       totalAmount: "0",
@@ -89,6 +90,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   // Watch form fields to update in real-time
   const watchedItems = form.watch("items");
   const watchedAllFields = form.watch(); // Watch all fields for live preview updates
+  const watchedProjectId = form.watch("projectId"); // Watch project ID for delivery address updates
   
   // This function will be called directly when quantity or price changes
   const calculateTotals = () => {
@@ -154,6 +156,20 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     // This will trigger a re-render with the latest form values
     forceUpdate({});
   }, [watchedAllFields]);
+  
+  // Update delivery address when project changes
+  useEffect(() => {
+    if (watchedProjectId) {
+      const selectedProject = projects.find((p: any) => p.id === Number(watchedProjectId));
+      if (selectedProject) {
+        // Set project address as delivery address if not already set
+        const currentAddress = form.getValues('deliveryAddress');
+        if (!currentAddress) {
+          form.setValue('deliveryAddress', `${selectedProject.name} Site`, { shouldValidate: true });
+        }
+      }
+    }
+  }, [watchedProjectId, projects, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -620,9 +636,14 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                     name="deliveryDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Required Delivery Date</FormLabel>
+                        <FormLabel>Required Delivery Date *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input 
+                            type="date" 
+                            {...field} 
+                            required
+                            min={new Date().toISOString().split('T')[0]}  
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -634,9 +655,14 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                     name="deliveryAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Delivery Address</FormLabel>
+                        <FormLabel>Delivery Address *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Enter delivery address" />
+                          <Input 
+                            {...field} 
+                            placeholder="Enter delivery address" 
+                            required
+                            className={!field.value ? "border-rose-300" : ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
