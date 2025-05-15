@@ -57,11 +57,11 @@ export function getStatusColor(status: string): {
       return { bg: "bg-status-warning", text: "text-neutral-text" };
     case "rejected":
     case "error":
+    case "cancelled":
       return { bg: "bg-status-error", text: "text-white" };
     case "completed":
       return { bg: "bg-neutral-textLight", text: "text-white" };
     case "info":
-    case "delivered":
       return { bg: "bg-status-info", text: "text-white" };
     default:
       return { bg: "bg-neutral-secondary", text: "text-neutral-text" };
