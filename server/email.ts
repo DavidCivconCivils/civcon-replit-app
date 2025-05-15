@@ -17,30 +17,22 @@ let transporter: nodemailer.Transporter;
 // Initialize transporter
 function getTransporter() {
   if (!transporter) {
-    // For development/testing, use a test account from Ethereal
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using test email account for development');
-      return nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER || 'test@ethereal.email',
-          pass: process.env.EMAIL_PASS || 'testpassword'
-        }
-      });
-    }
-
-    // For production, use configured email service
+    // Office 365 SMTP configuration
     transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.civconcivils.co.uk',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: process.env.EMAIL_SECURE === 'true',
+      host: 'smtp.office365.com',
+      port: 587,
+      secure: false, // TLS requires secure to be false
       auth: {
-        user: process.env.EMAIL_USER || 'noreply@civconcivils.co.uk',
-        pass: process.env.EMAIL_PASS || ''
+        user: 'procurement@civconcivils.co.uk',
+        pass: 'civcon.2134'
+      },
+      tls: {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false // Helps with some Office 365 configurations
       }
     });
+    
+    console.log('Office 365 email transport configured');
   }
   
   return transporter;
@@ -51,7 +43,7 @@ export async function sendEmail(options: EmailOptions): Promise<{success: boolea
     const transport = getTransporter();
     
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'Civcon Office <noreply@civconcivils.co.uk>',
+      from: 'Civcon Office <procurement@civconcivils.co.uk>',
       ...options
     };
     

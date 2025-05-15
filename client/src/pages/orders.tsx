@@ -71,6 +71,8 @@ export default function Orders() {
     alert('PDF export functionality would be implemented here.');
   };
 
+  const { toast } = useToast();
+  
   const emailMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("POST", `/api/purchase-orders/${id}/email`);
