@@ -97,7 +97,36 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       const totalAmount = items.reduce((sum, item, index) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
-        const totalPrice = quantity * unitPrice;
+        const basePrice = quantity * unitPrice;
+        const vatType = item.vatType || "VAT 20%";
+        
+        // Calculate VAT amount based on the selected type
+        let vatAmount = 0;
+        if (vatType === "VAT 20%") {
+          vatAmount = basePrice * 0.2;
+        } else if (vatType === "20% RC CIS (0%)") {
+          // For this type, we calculate VAT but it's netted to zero
+          vatAmount = 0; // Net effect is zero, but we'll show it in the UI
+          form.setValue(`items.${index}.vatAmount`, (basePrice * 0.2).toFixed(2), {
+            shouldValidate: true
+          });
+        } else {
+          // VAT 0%
+          vatAmount = 0;
+        }
+        
+        // For regular VAT, store the amount
+        if (vatType === "VAT 20%") {
+          form.setValue(`items.${index}.vatAmount`, vatAmount.toFixed(2), {
+            shouldValidate: true
+          });
+        } else if (vatType === "VAT 0%") {
+          form.setValue(`items.${index}.vatAmount`, "0.00", {
+            shouldValidate: true
+          });
+        }
+        
+        const totalPrice = basePrice + (vatType === "VAT 20%" ? vatAmount : 0);
         
         // Update item total price (with 2 decimal places for British pounds)
         form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2), {
@@ -408,6 +437,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-neutral-textLight tracking-wider w-16">Action</th>
                       </tr>
@@ -497,6 +527,32 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                     calculateTotals();
                                   }}
                                 />
+                              )}
+                            />
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.vatType`}
+                              render={({ field }) => (
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    calculateTotals();
+                                  }}
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="w-36 border-0 p-0 focus:ring-0 text-sm text-neutral-text">
+                                      <SelectValue placeholder="VAT Type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="VAT 20%">VAT 20%</SelectItem>
+                                    <SelectItem value="VAT 0%">VAT 0%</SelectItem>
+                                    <SelectItem value="20% RC CIS (0%)">20% RC CIS (0%)</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               )}
                             />
                           </td>
