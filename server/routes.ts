@@ -259,9 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send email
       const emailResult = await sendEmail({
-        to: 'finance@civconcivils.co.uk',
+        to: 'procurement@civconcivils.co.uk',
         subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
-        text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review and approve.`,
+        text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review for procurement processing.`,
         html: `
           <h1>New Purchase Requisition</h1>
           <p>A new purchase requisition has been submitted with the following details:</p>
@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
             <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
           </ul>
-          <p>Please review and approve this requisition.</p>
+          <p>Please review this requisition for procurement processing.</p>
         `,
         attachments: [
           {
