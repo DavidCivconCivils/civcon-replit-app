@@ -68,11 +68,11 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       {/* Supplier Info */}
       <div className="bg-neutral p-4 rounded-md mb-6">
         <h4 className="font-medium mb-2">Supplier Information</h4>
-        {data.supplier ? (
+        {supplier.name ? (
           <>
-            <p>{data.supplier.name}</p>
-            <p className="text-sm text-neutral-textLight">{data.supplier.address}</p>
-            <p className="text-sm text-neutral-textLight">{data.supplier.email}</p>
+            <p>{supplier.name}</p>
+            <p className="text-sm text-neutral-textLight">{supplier.address || ""}</p>
+            <p className="text-sm text-neutral-textLight">{supplier.email || ""}</p>
           </>
         ) : (
           <p className="text-sm text-neutral-textLight">No supplier information</p>
@@ -132,13 +132,13 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
-          <p className="font-medium">{requisition.deliveryAddress || "N/A"}</p>
+          <p className="font-medium">{requisition?.deliveryAddress || "N/A"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Required By:</p>
-          <p className="font-medium">{requisition.deliveryDate ? formatDate(requisition.deliveryDate) : "N/A"}</p>
+          <p className="font-medium">{requisition?.deliveryDate ? formatDate(requisition.deliveryDate) : "N/A"}</p>
         </div>
-        {requisition.deliveryInstructions && (
+        {requisition?.deliveryInstructions && (
           <div className="col-span-2">
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
             <p>{requisition.deliveryInstructions}</p>
@@ -173,8 +173,8 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
           </div>
           <div>
             <p className="text-sm text-neutral-textLight">Original Requisition:</p>
-            <p className="font-medium">{requisition.requisitionNumber || "N/A"}</p>
-            <p className="text-xs text-neutral-textLight">Date: {requisition.requestDate ? formatDate(requisition.requestDate) : "N/A"}</p>
+            <p className="font-medium">{requisition?.requisitionNumber || "N/A"}</p>
+            <p className="text-xs text-neutral-textLight">Date: {requisition?.requestDate ? formatDate(requisition.requestDate) : "N/A"}</p>
           </div>
         </div>
       </div>

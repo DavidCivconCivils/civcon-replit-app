@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <NavLink href="/suppliers" icon={<Building2 size={18} />} text="Suppliers" active={location === "/suppliers"} />
             <NavLink href="/requisitions" icon={<FileText size={18} />} text="Requisitions" active={location === "/requisitions"} />
             <NavLink href="/orders" icon={<ShoppingCart size={18} />} text="Purchase Orders" active={location === "/orders"} />
-            {(user?.role === "admin" || user?.role === "finance") && (
+            {user?.role === "admin" && (
               <NavLink href="/reports" icon={<FileText size={18} />} text="Reports" active={location === "/reports"} />
             )}
             {user?.role === "admin" && (
