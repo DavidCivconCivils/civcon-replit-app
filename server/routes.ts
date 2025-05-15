@@ -26,6 +26,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management routes (admin only)
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized access" });
+      }
+      
+      const users = await storage.getUsers();
+      // Don't send passwords back to client
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized access" });
+      }
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(req.body.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await hashPassword(req.body.password);
+      
+      // Create the user
+      const userData = {
+        ...req.body,
+        password: hashedPassword,
+      };
+      
+      const newUser = await storage.createUser(userData);
+      
+      // Don't send password back to client
+      const { password, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.put('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized access" });
+      }
+      
+      const userId = req.params.id;
+      
+      // Check if user exists
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      let userData = { ...req.body };
+      
+      // If password is provided, hash it
+      if (userData.password) {
+        userData.password = await hashPassword(userData.password);
+      } else {
+        // Remove password field if it's empty
+        delete userData.password;
+      }
+      
+      // Remove confirmPassword field as it's not in the database
+      delete userData.confirmPassword;
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(userId, userData);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+      
+      // Don't send password back to client
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Unauthorized access" });
+      }
+      
+      const userId = req.params.id;
+      
+      // Check if user exists
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Don't allow deleting yourself
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Delete the user
+      const success = await storage.deleteUser(userId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete user" });
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Project routes
   app.get('/api/projects', isAuthenticated, async (_req, res) => {
     try {
@@ -544,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (status === 'rejected') {
         // Send email notification about rejection
-        const userId = req.user.id || req.user.claims?.sub;
+        const userId = req.user.id; // We're using standard auth, so just use id
         const user = await storage.getUser(userId);
         const requester = await storage.getUser(requisition.requestedById);
         const project = await storage.getProject(requisition.projectId);

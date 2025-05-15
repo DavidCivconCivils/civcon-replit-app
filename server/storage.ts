@@ -92,6 +92,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
@@ -105,6 +110,29 @@ export class DatabaseStorage implements IStorage {
     
     const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+  
+  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        ...userData,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser;
+  }
+  
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
   
   async updateUserPassword(userId: string, newPassword: string): Promise<User | undefined> {
