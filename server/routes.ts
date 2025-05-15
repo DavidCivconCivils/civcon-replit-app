@@ -664,6 +664,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Requisition not found" });
       }
       
+      // Check if the current user is the one who created the requisition
+      const isRequester = requisition.requestedById === req.user.id;
+      const isFinanceOrAdmin = ['finance', 'admin'].includes(req.user.role);
+      
+      // Only allow approval/rejection by the requisition creator or finance/admin users
+      if (!isRequester && !isFinanceOrAdmin) {
+        return res.status(403).json({ message: "You don't have permission to update this requisition" });
+      }
+      
       // Update requisition status (and rejection reason if applicable)
       const updateData: any = { status };
       if (status === 'rejected' && rejectionReason) {
