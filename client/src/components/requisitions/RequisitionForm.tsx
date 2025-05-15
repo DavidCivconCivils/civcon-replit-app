@@ -195,7 +195,26 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     }
     
     // Force a refresh of the form data when navigating to review
-    if (tab === "review") {
+    if (tab === "review-submit") {
+      // Make sure all calculations are updated before showing the review
+      const formItems = form.getValues("items");
+      
+      // Update all items one more time to ensure values are current
+      formItems.forEach((_, index) => {
+        const quantity = Number(form.getValues(`items.${index}.quantity`)) || 0;
+        const unitPrice = Number(form.getValues(`items.${index}.unitPrice`)) || 0;
+        const totalPrice = quantity * unitPrice;
+        
+        form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2));
+      });
+      
+      // Update the total amount
+      const total = formItems.reduce((sum, item) => {
+        return sum + Number(item.totalPrice);
+      }, 0);
+      
+      form.setValue("totalAmount", total.toFixed(2));
+      
       // This ensures all updated form values are shown in review
       setTimeout(() => {
         setActiveTab(tab);
@@ -607,6 +626,10 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
             
             {/* Review & Submit Tab */}
             <TabsContent value="review-submit" className="space-y-4">
+              {/* Force a new render with fresh form values when this tab is shown */}
+              {activeTab === "review-submit" && (
+                <></>
+              )}
               <h3 className="text-lg font-medium text-neutral-text">Review & Submit</h3>
               
               <div className="bg-neutral-secondary/20 p-4 rounded-md">
@@ -661,8 +684,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-neutral-secondary">
-                      {fields.map((item, index) => (
-                        <tr key={item.id}>
+                      {/* Get the latest values directly from the form instead of using fields array */}
+                      {form.getValues("items").map((item, index) => (
+                        <tr key={`item-row-${index}`}>
                           <td className="px-4 py-2 text-sm text-neutral-text">{index + 1}</td>
                           <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
                           <td className="px-4 py-2 text-sm text-neutral-text">{item.quantity}</td>
