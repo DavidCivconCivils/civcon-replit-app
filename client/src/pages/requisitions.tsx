@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Requisition } from "@shared/schema";
+import { Requisition, Project, Supplier } from "@shared/schema";
 import RequisitionForm from "@/components/requisitions/RequisitionForm";
 import RequisitionPreview from "@/components/requisitions/RequisitionPreview";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { Plus, Search, Eye, Edit, Printer, FileText, Mail } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Plus, Search, Eye, Edit, Printer, FileText, Mail, XCircle } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Requisitions() {
@@ -22,6 +22,8 @@ export default function Requisitions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequisition, setSelectedRequisition] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [requisitionToCancel, setRequisitionToCancel] = useState<Requisition | null>(null);
   const { toast } = useToast();
 
   // Check URL params

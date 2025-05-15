@@ -41,7 +41,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <NavLink href="/suppliers" icon={<Building2 size={18} />} text="Suppliers" active={location === "/suppliers"} />
             <NavLink href="/requisitions" icon={<FileText size={18} />} text="Requisitions" active={location === "/requisitions"} />
             <NavLink href="/orders" icon={<ShoppingCart size={18} />} text="Purchase Orders" active={location === "/orders"} />
-            <NavLink href="/reports" icon={<BarChart3 size={18} />} text="Reports" active={location === "/reports"} />
+            {user?.role === "admin" && (
+              <NavLink href="/users" icon={<Users size={18} />} text="Users" active={location === "/users"} />
+            )}
           </div>
         </nav>
         
@@ -61,7 +63,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 {user?.firstName} {user?.lastName}
               </p>
               <p className="text-xs text-neutral-tertiary truncate">
-                {user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
+                {user?.role === 'admin' ? 'Administrator' : 
+                 user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
               </p>
             </div>
             <div className="ml-auto flex gap-1">
