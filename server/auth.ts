@@ -45,13 +45,30 @@ export function setupAuth(app: Express) {
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      // In Replit environment, we need to enable secure cookies but also set sameSite to 'none'
+      // to allow cross-site cookies when using the Replit domain
+      secure: true,
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
     }
   };
 
   app.set("trust proxy", 1);
+  
+  // More detailed session debugging
+  app.use((req, res, next) => {
+    console.log('Pre-session middleware. Cookies:', req.headers.cookie);
+    next();
+  });
+  
   app.use(session(sessionSettings));
+  
+  app.use((req, res, next) => {
+    console.log('Post-session middleware. Session ID:', req.sessionID);
+    console.log('Session data:', req.session);
+    next();
+  });
+  
   app.use(passport.initialize());
   app.use(passport.session());
 
