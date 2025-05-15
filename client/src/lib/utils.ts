@@ -14,8 +14,19 @@ export function formatCurrency(amount: number | string): string {
   }).format(num);
 }
 
-export function formatDate(date: Date | string): string {
-  return format(new Date(date), "MMM dd, yyyy");
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return 'N/A';
+  
+  try {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid Date';
+    }
+    return format(dateObj, "MMM dd, yyyy");
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
 }
 
 export function truncateText(text: string, maxLength: number): string {
