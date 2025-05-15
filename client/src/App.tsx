@@ -50,6 +50,12 @@ function Router() {
         </MainLayout>
       </Route>
       
+      <Route path="/projects/:id">
+        <MainLayout>
+          <ProtectedRoute component={Projects} />
+        </MainLayout>
+      </Route>
+      
       <Route path="/suppliers">
         <MainLayout>
           <ProtectedRoute component={Suppliers} />
