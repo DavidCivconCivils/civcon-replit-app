@@ -32,6 +32,8 @@ interface RequisitionPreviewProps {
       unit: string;
       unitPrice: string;
       totalPrice: string;
+      vatType?: string;
+      vatAmount?: string;
     }[];
     totalAmount: string;
     user?: User | null;
@@ -114,6 +116,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT</th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
             </tr>
           </thead>
@@ -128,24 +131,88 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
                   {formatCurrency(parseFloat(item.unitPrice) || 0)}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
+                  {item.vatType || "VAT 20%"}
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
                   {formatCurrency(parseFloat(item.totalPrice) || 0)}
                 </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-sm text-neutral-textLight">
+                <td colSpan={7} className="px-4 py-4 text-center text-sm text-neutral-textLight">
                   No items found in this requisition.
                 </td>
               </tr>
             )}
           </tbody>
           <tfoot className="bg-neutral-secondary">
-            <tr>
-              <td colSpan={5} className="px-4 py-2 text-sm font-medium text-right">Total Amount:</td>
-              <td className="px-4 py-2 text-sm font-medium">
-                {data.totalAmount ? formatCurrency(parseFloat(data.totalAmount)) : '£0.00'}
-              </td>
-            </tr>
+            {/* Calculate subtotal and VAT amounts based on items */}
+            {(() => {
+              // Calculate totals
+              const subtotal = data.items.reduce((sum, item) => {
+                const quantity = Number(item.quantity) || 0;
+                const unitPrice = parseFloat(item.unitPrice) || 0;
+                return sum + (quantity * unitPrice);
+              }, 0);
+              
+              // Calculate each VAT type amount
+              let vat20Amount = 0;
+              let vatCisAmount = 0;
+              
+              data.items.forEach(item => {
+                const quantity = Number(item.quantity) || 0;
+                const unitPrice = parseFloat(item.unitPrice) || 0;
+                const itemSubtotal = quantity * unitPrice;
+                
+                if (item.vatType === "VAT 20%") {
+                  vat20Amount += itemSubtotal * 0.2;
+                } else if (item.vatType === "20% RC CIS (0%)") {
+                  vatCisAmount += itemSubtotal * 0.2;
+                }
+                // VAT 0% doesn't add any VAT
+              });
+              
+              return (
+                <>
+                  <tr>
+                    <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">Subtotal:</td>
+                    <td className="px-4 py-2 text-sm font-medium">
+                      {formatCurrency(subtotal)}
+                    </td>
+                  </tr>
+                  {vat20Amount > 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ 20%:</td>
+                      <td className="px-4 py-2 text-sm font-medium">
+                        {formatCurrency(vat20Amount)}
+                      </td>
+                    </tr>
+                  )}
+                  {vatCisAmount > 0 && (
+                    <>
+                      <tr>
+                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ 20% (RC CIS):</td>
+                        <td className="px-4 py-2 text-sm font-medium">
+                          {formatCurrency(vatCisAmount)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">VAT @ -20% (RC CIS):</td>
+                        <td className="px-4 py-2 text-sm font-medium">
+                          {formatCurrency(-vatCisAmount)}
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                  <tr className="bg-neutral-secondary/40">
+                    <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">Total Amount:</td>
+                    <td className="px-4 py-2 text-sm font-bold">
+                      {formatCurrency(subtotal + vat20Amount)}
+                    </td>
+                  </tr>
+                </>
+              );
+            })()}
           </tfoot>
         </table>
       </div>

@@ -742,6 +742,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                         <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT Type</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
                       </tr>
                     </thead>
@@ -754,6 +755,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                           <td className="px-4 py-2 text-sm text-neutral-text">{item.quantity}</td>
                           <td className="px-4 py-2 text-sm text-neutral-text">{item.unit}</td>
                           <td className="px-4 py-2 text-sm text-neutral-text">{formatCurrency(parseFloat(item.unitPrice))}</td>
+                          <td className="px-4 py-2 text-sm text-neutral-text">{item.vatType || 'VAT 20%'}</td>
                           <td className="px-4 py-2 text-sm font-medium text-neutral-text">{formatCurrency(parseFloat(item.totalPrice))}</td>
                         </tr>
                       ))}
