@@ -188,36 +188,31 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       </div>
       
       {/* Action Buttons (only visible in non-print mode) */}
-      {(onPrint || onExportPdf || onEmail) && (
-        <div className="no-print flex justify-end space-x-3 mt-6">
-          {onPrint && (
-            <Button 
-              onClick={onPrint} 
-              variant="outline"
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-          )}
-          {onExportPdf && (
-            <Button 
-              onClick={onExportPdf} 
-              variant="outline"
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
-          )}
-          {onEmail && (
-            <Button 
-              onClick={onEmail}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Email
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="no-print flex justify-end space-x-3 mt-6">
+        <Button 
+          onClick={onPrint} 
+          variant="outline"
+          disabled={!onPrint}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          Print
+        </Button>
+        <Button 
+          onClick={onExportPdf} 
+          variant="outline"
+          disabled={!onExportPdf}
+        >
+          <FileDown className="mr-2 h-4 w-4" />
+          Export PDF
+        </Button>
+        <Button 
+          onClick={onEmail}
+          disabled={!onEmail}
+        >
+          <Mail className="mr-2 h-4 w-4" />
+          Email
+        </Button>
+      </div>
     </div>
   );
 }
