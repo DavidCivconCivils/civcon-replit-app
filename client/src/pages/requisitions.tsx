@@ -47,7 +47,7 @@ export default function Requisitions() {
   });
 
   // Fetch requisition details for preview
-  const { data: requisitionDetails, isLoading: isLoadingDetails } = useQuery({
+  const { data: requisitionDetails, isLoading: isLoadingDetails } = useQuery<any>({
     queryKey: ['/api/requisitions', selectedRequisition],
     enabled: selectedRequisition !== null,
   });
@@ -110,15 +110,37 @@ export default function Requisitions() {
     }
   });
 
-  // Handle print functionality
-  const handlePrintRequisition = () => {
-    window.print();
-  };
-
   const handleExportPdf = () => {
-    // This would typically invoke a server endpoint to generate and download a PDF
-    // For now, we'll simulate it with an alert
-    alert('PDF export functionality would be implemented here.');
+    if (!selectedRequisition) return;
+    
+    // Call the PDF export endpoint and trigger a download
+    fetch(`/api/requisitions/${selectedRequisition}/pdf`, {
+      method: 'GET',
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      // Create a download link for the blob
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `requisition-${selectedRequisition}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+      toast({
+        title: "PDF Generation Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    });
   };
   
   const handleEmailRequisition = () => {
@@ -276,7 +298,6 @@ export default function Requisitions() {
               ) : requisitionDetails ? (
                 <RequisitionPreview 
                   data={requisitionDetails} 
-                  onPrint={handlePrintRequisition}
                   onExportPdf={handleExportPdf}
                   onEmail={handleEmailRequisition}
                 />

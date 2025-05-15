@@ -217,6 +217,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // PDF Generation endpoint
+  app.get('/api/requisitions/:id/pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid requisition ID" });
+      }
+      
+      // Get all required data
+      const requisition = await storage.getRequisition(id);
+      if (!requisition) {
+        return res.status(404).json({ message: "Requisition not found" });
+      }
+      
+      const project = await storage.getProject(requisition.projectId);
+      const supplier = await storage.getSupplier(requisition.supplierId);
+      const user = await storage.getUser(requisition.requestedById);
+      const items = await storage.getRequisitionItems(requisition.id);
+      
+      if (!project || !supplier || !user || !items.length) {
+        return res.status(400).json({ 
+          message: "Missing required data to generate PDF",
+          details: {
+            hasProject: !!project,
+            hasSupplier: !!supplier,
+            hasUser: !!user,
+            itemCount: items.length
+          }
+        });
+      }
+      
+      // Generate the PDF
+      const pdfBuffer = await generatePDF('requisition', {
+        requisition,
+        items,
+        project,
+        supplier,
+        user
+      });
+      
+      // Set the response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="requisition-${requisition.requisitionNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send the PDF
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF", error: String(error) });
+    }
+  });
+
   // Email a requisition to finance
   app.post('/api/requisitions/:id/email', isAuthenticated, async (req: any, res) => {
     try {
