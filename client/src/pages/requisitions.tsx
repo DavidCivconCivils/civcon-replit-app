@@ -310,7 +310,10 @@ export default function Requisitions() {
                                 >
                                   <Mail size={16} />
                                 </Button>
+                                {/* Only allow creators or admin/finance to cancel pending requisitions */}
                                 {req.status === "pending" && (
+                                  req.requestedById === user?.id || user?.role === "finance" || user?.role === "admin"
+                                ) && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
