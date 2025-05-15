@@ -214,18 +214,12 @@ export default function Requisitions() {
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-8 w-8 text-primary hover:text-primary-dark"
+                                    onClick={() => handleEditRequisition(req.id)}
                                   >
                                     <Edit size={16} />
                                   </Button>
                                 )}
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-primary hover:text-primary-dark"
-                                  onClick={() => handlePreviewRequisition(req.id)}
-                                >
-                                  <Printer size={16} />
-                                </Button>
+
                               </div>
                             </TableCell>
                           </TableRow>
