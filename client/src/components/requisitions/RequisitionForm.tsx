@@ -80,8 +80,10 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     name: "items",
   });
 
-  // Watch items to calculate total amount
+  // Watch items to calculate total amount in real-time
   const watchedItems = form.watch("items");
+  const watchQuantities = form.watch("items.*.quantity");
+  const watchUnitPrices = form.watch("items.*.unitPrice");
   
   useEffect(() => {
     // Calculate total amount when items change
@@ -91,14 +93,18 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       const totalPrice = quantity * unitPrice;
       
       // Update item total price (with 2 decimal places for British pounds)
-      form.setValue(`items.${watchedItems.indexOf(item)}.totalPrice`, totalPrice.toFixed(2));
+      form.setValue(`items.${watchedItems.indexOf(item)}.totalPrice`, totalPrice.toFixed(2), {
+        shouldValidate: true
+      });
       
       return sum + totalPrice;
     }, 0);
     
     // Set the total amount with 2 decimal places for British pounds
-    form.setValue("totalAmount", totalAmount.toFixed(2));
-  }, [watchedItems, form]);
+    form.setValue("totalAmount", totalAmount.toFixed(2), {
+      shouldValidate: true
+    });
+  }, [watchedItems, watchQuantities, watchUnitPrices, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -679,7 +685,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={isPending || !form.formState.isValid}
+                  disabled={isPending || !form.watch("terms")}
                   className="bg-primary text-white"
                 >
                   {isPending ? "Submitting..." : "Submit Requisition"}
