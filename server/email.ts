@@ -2,6 +2,8 @@ import nodemailer from 'nodemailer';
 
 interface EmailOptions {
   to: string;
+  cc?: string;  // Add support for CC recipients
+  bcc?: string; // Add support for BCC recipients
   subject: string;
   text: string;
   html: string;

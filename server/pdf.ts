@@ -29,8 +29,9 @@ export async function generatePDF(
   // Add company logo
   try {
     // Get logo from the public directory
-    doc.addImage('public/Civcon Civils Logo.png', 'PNG', 140, 10, 50, 20);
-    console.log('Logo added to PDF successfully');
+    const logoPath = './public/Civcon Civils Logo.png';
+    doc.addImage(logoPath, 'PNG', 140, 10, 50, 20);
+    console.log('Logo added to PDF successfully with path:', logoPath);
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
     // Fallback text if logo can't be loaded

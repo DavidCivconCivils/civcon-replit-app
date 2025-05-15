@@ -501,22 +501,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user
       });
       
-      // Send email
+      // Send email to procurement and CC requester
+      const procurementEmail = 'procurement@civconcivils.co.uk';
+      const requesterEmail = user.email;
+      
+      console.log(`Sending requisition email to: ${procurementEmail}, CC: ${requesterEmail}`);
+      
       const emailResult = await sendEmail({
-        to: 'procurement@civconcivils.co.uk',
+        to: procurementEmail,
+        cc: requesterEmail,
         subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
-        text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName} ${user.lastName} for project ${project.name}. Please review for procurement processing.`,
+        text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName || ''} ${user.lastName || ''} for project ${project.name}. Please review for procurement processing.`,
         html: `
           <h1>New Purchase Requisition</h1>
           <p>A new purchase requisition has been submitted with the following details:</p>
           <ul>
             <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
-            <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+            <li><strong>Project:</strong> ${project.name} (${project.contractNumber || 'No contract number'})</li>
             <li><strong>Supplier:</strong> ${supplier.name}</li>
-            <li><strong>Requested By:</strong> ${user.firstName} ${user.lastName}</li>
+            <li><strong>Requested By:</strong> ${user.firstName || ''} ${user.lastName || ''} (${user.email})</li>
             <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
           </ul>
           <p>Please review this requisition for procurement processing.</p>
+          <p>For any questions, please contact Civcon Office.</p>
         `,
         attachments: [
           {
@@ -527,9 +534,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (emailResult.success) {
-        res.json({ success: true, message: "Email sent successfully" });
+        res.json({ 
+          success: true, 
+          message: "Requisition emailed successfully to procurement and requester",
+          recipients: [procurementEmail, requesterEmail].filter(Boolean)
+        });
       } else {
-        res.status(500).json({ success: false, message: "Failed to send email", error: emailResult.error });
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to send requisition email", 
+          error: emailResult.error 
+        });
       }
     } catch (error) {
       console.error("Error sending requisition email:", error);
@@ -949,7 +964,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (emailResult.success) {
-        res.json({ message: "Purchase order emailed successfully to supplier" });
+        res.json({ 
+          message: "Purchase order emailed successfully to supplier, procurement team, and requester",
+          recipients: [supplier.email, procurementEmail, requesterEmail].filter(Boolean)
+        });
       } else {
         res.status(500).json({ 
           message: "Failed to email purchase order", 
