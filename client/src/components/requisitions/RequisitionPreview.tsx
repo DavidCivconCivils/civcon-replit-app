@@ -62,7 +62,7 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           <p className="font-medium">
             {data.project 
               ? `${data.project.name} (${data.project.contractNumber})` 
-              : "3096 (test)"}
+              : "No project specified"}
           </p>
         </div>
         <div>
@@ -70,16 +70,16 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
           <p className="font-medium">{formatDate(data.requestDate)}</p>
         </div>
         <div>
-          <p className="text-sm text-neutral-textLight">Requested By:</p>
+          <p className="text-sm text-neutral-textLight">Status:</p>
           <p className="font-medium">
-            {data.user 
-              ? `${data.user.firstName || ''} ${data.user.lastName || ''}` 
-              : "Current User"}
+            {data.status === "pending" ? "Sent for Approval" : 
+             data.status === "rejected" ? "Rejected" : 
+             data.status || "Draft"}
           </p>
         </div>
         <div>
-          <p className="text-sm text-neutral-textLight">Status:</p>
-          <p className="font-medium">{data.status || "Draft"}</p>
+          <p className="text-sm text-neutral-textLight">Required By:</p>
+          <p className="font-medium">{formatDate(data.deliveryDate)}</p>
         </div>
       </div>
       
@@ -145,17 +145,13 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       </div>
       
       {/* Delivery Info */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-4 mb-6">
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
-          <p className="font-medium">{data.deliveryAddress}</p>
-        </div>
-        <div>
-          <p className="text-sm text-neutral-textLight">Required By:</p>
-          <p className="font-medium">{formatDate(data.deliveryDate)}</p>
+          <p className="font-medium">{data.deliveryAddress || "N/A"}</p>
         </div>
         {data.deliveryInstructions && (
-          <div className="col-span-2">
+          <div>
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
             <p>{data.deliveryInstructions}</p>
           </div>
@@ -182,23 +178,17 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
         </ol>
       </div>
       
-      {/* Approval Section */}
+      {/* Signature Section */}
       <div className="border-t border-neutral-secondary pt-4 mb-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-neutral-textLight">Requested By:</p>
-            <p className="font-medium">
-              {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email : "David Miguel"}
-            </p>
-            <p className="text-xs text-neutral-textLight">
-              {data.user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
-            </p>
-            <p className="text-xs text-neutral-textLight">{formatDate(data.requestDate)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-textLight">Approved By:</p>
-            <p className="font-medium text-neutral-textLight italic">Pending Approval</p>
-          </div>
+        <div>
+          <p className="text-sm text-neutral-textLight">Requested By:</p>
+          <p className="font-medium">
+            {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email : "Unknown User"}
+          </p>
+          <p className="text-xs text-neutral-textLight">
+            {data.user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
+          </p>
+          <p className="text-xs text-neutral-textLight">{formatDate(data.requestDate)}</p>
         </div>
       </div>
       

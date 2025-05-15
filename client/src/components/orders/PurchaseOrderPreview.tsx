@@ -71,12 +71,8 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
           <p className="font-medium">{data.purchaseOrder && data.purchaseOrder.issueDate ? formatDate(data.purchaseOrder.issueDate) : "Not specified"}</p>
         </div>
         <div>
-          <p className="text-sm text-neutral-textLight">Approved By:</p>
-          <p className="font-medium">
-            {data.user 
-              ? `${data.user.firstName || ''} ${data.user.lastName || ''}` 
-              : "Finance Team"}
-          </p>
+          <p className="text-sm text-neutral-textLight">Purchase Order Number:</p>
+          <p className="font-medium">{data.poNumber}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Status:</p>
@@ -177,9 +173,11 @@ export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEma
       <div className="border-t border-neutral-secondary pt-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-neutral-textLight">Issued By:</p>
+            <p className="text-sm text-neutral-textLight">Approved By:</p>
             <p className="font-medium">
-              {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}` : "Finance Team"}
+              {data.user 
+                ? `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email
+                : "Finance Team"}
             </p>
             <p className="text-xs text-neutral-textLight">Finance Team</p>
             <p className="text-xs text-neutral-textLight">{formatDate(data.purchaseOrder.issueDate)}</p>
