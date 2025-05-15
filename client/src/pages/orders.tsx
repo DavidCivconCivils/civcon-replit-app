@@ -43,7 +43,9 @@ export default function Orders() {
   const pendingRequisitions = requisitions.filter(req => req.status === 'pending');
   
   // Get requisitions created by the current user
-  const userCreatedRequisitions = requisitions.filter(req => req.requestedById === user?.id && req.status === 'pending');
+  const userCreatedRequisitions = user ? requisitions.filter(req => 
+    req.requestedById === user.id && req.status === 'pending'
+  ) : [];
 
   // Fetch order details for preview
   const { data: orderDetails, isLoading: isLoadingDetails } = useQuery({
@@ -149,30 +151,27 @@ export default function Orders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-text">Purchase Orders</h1>
-        {user?.role === 'finance' && (
+        {isFinanceOrAdmin && (
           <Button onClick={() => setIsFormOpen(true)}>Create Purchase Order</Button>
         )}
       </div>
       
-      {/* Show tabs with appropriate content based on user role */}
       <Tabs defaultValue="orders" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
           
-          {/* Show appropriate tabs based on role */}
-          {isFinanceOrAdmin && (
+          {/* Finance/Admin can see all pending requisitions */}
+          {isFinanceOrAdmin && pendingRequisitions.length > 0 && (
             <TabsTrigger value="pending">
-              Requisitions to be Processed
-              {pendingRequisitions.length > 0 && (
-                <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
-                  {pendingRequisitions.length}
-                </span>
-              )}
+              Requisitions to Process
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
+                {pendingRequisitions.length}
+              </span>
             </TabsTrigger>
           )}
           
-          {/* Show My Requisitions tab for all users */}
-          {user && userCreatedRequisitions.length > 0 && (
+          {/* All users can see their own pending requisitions */}
+          {userCreatedRequisitions.length > 0 && (
             <TabsTrigger value="my-requisitions">
               My Pending Requisitions
               <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
@@ -182,6 +181,7 @@ export default function Orders() {
           )}
         </TabsList>
 
+        {/* Purchase Orders Tab */}
         <TabsContent value="orders" className="space-y-4">
           {/* Purchase Orders Filters */}
           <div className="bg-white rounded-lg shadow p-4">
@@ -286,21 +286,16 @@ export default function Orders() {
                 <p className="text-neutral-textLight mb-4">
                   {searchTerm
                     ? "Try adjusting your search terms."
-                    : user?.role === 'finance'
-                      ? "Create a purchase order for an approved requisition."
-                      : "No purchase orders have been created yet."}
+                    : "No purchase orders have been created yet."}
                 </p>
-                {user?.role === 'finance' && (
-                  <Button onClick={() => setIsFormOpen(true)}>Create Purchase Order</Button>
-                )}
               </div>
             )}
           </div>
         </TabsContent>
 
-        {/* Finance/Admin Tab */}
+        {/* Finance/Admin Tab for pending requisitions */}
         {isFinanceOrAdmin && (
-          <TabsContent value="pending" className="space-y-4" id="requisitions-to-process">
+          <TabsContent value="pending" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Pending Requisitions to Process</h2>
             </div>
@@ -361,7 +356,7 @@ export default function Orders() {
           </TabsContent>
         )}
 
-        {/* My Pending Requisitions Tab */}
+        {/* My Pending Requisitions Tab - For non-finance/admin users */}
         <TabsContent value="my-requisitions" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">My Pending Requisitions</h2>
@@ -441,13 +436,13 @@ export default function Orders() {
             <PurchaseOrderPreview 
               data={orderDetails} 
               onExportPdf={() => generatePdfMutation.mutate(orderDetails.id)}
-              onEmail={() => {
+              onEmail={isFinanceOrAdmin ? () => {
                 toast({
                   title: "Sending email...",
                   description: "Emailing purchase order to supplier",
                 });
                 emailPurchaseOrderMutation.mutate(orderDetails.id);
-              }}
+              } : undefined}
             />
           ) : (
             <p className="text-neutral-textLight">Could not load purchase order details.</p>

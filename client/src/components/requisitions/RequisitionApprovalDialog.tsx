@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Dialog, 
   DialogContent, 
@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Requisition } from "@shared/schema";
 
 interface RequisitionApprovalDialogProps {
   requisitionId: number | null;
@@ -31,7 +33,33 @@ export default function RequisitionApprovalDialog({
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const { toast } = useToast();
-
+  const { user } = useAuth();
+  
+  // Check if user is finance or admin
+  const isFinanceOrAdmin = user?.role === 'admin' || user?.role === 'finance';
+  
+  // Fetch requisition data to check if current user is the requester
+  const { data: requisition } = useQuery<Requisition>({
+    queryKey: ['/api/requisitions', requisitionId],
+    queryFn: async () => {
+      if (!requisitionId) return null;
+      const response = await fetch(`/api/requisitions/${requisitionId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch requisition: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: requisitionId !== null && isOpen,
+  });
+  
+  // Determine if current user is the requester
+  const isRequester = user && requisition ? requisition.requestedById === user.id : false;
+  
+  // Set dialog title based on user role
+  const dialogTitle = isFinanceOrAdmin 
+    ? "Process Requisition as Finance/Admin" 
+    : "Process Your Requisition";
+  
   const approveMutation = useMutation({
     mutationFn: async ({ requisitionId, poNumber }: { requisitionId: number, poNumber: string }) => {
       const response = await apiRequest(
@@ -182,9 +210,11 @@ export default function RequisitionApprovalDialog({
       ) : (
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Process Requisition</DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              Enter a purchase order number to approve this requisition or reject it with a reason.
+              {isRequester
+                ? "As the requisition creator, you can process this requisition. Enter a purchase order number to approve it."
+                : "Enter a purchase order number to approve this requisition or reject it with a reason."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -201,14 +231,17 @@ export default function RequisitionApprovalDialog({
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
             <div>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleShowRejectForm}
-                disabled={isLoading}
-              >
-                Reject
-              </Button>
+              {/* Only finance/admin can reject requisitions */}
+              {isFinanceOrAdmin && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleShowRejectForm}
+                  disabled={isLoading}
+                >
+                  Reject
+                </Button>
+              )}
             </div>
             <div className="flex gap-2">
               <Button 
