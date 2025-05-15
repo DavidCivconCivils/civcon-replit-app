@@ -2,6 +2,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { User, Project, Supplier, Requisition, RequisitionItem, PurchaseOrder } from '@shared/schema';
+import fs from 'fs';
+import path from 'path';
 
 type RequisitionData = {
   requisition: Requisition;
@@ -28,10 +30,22 @@ export async function generatePDF(
   
   // Add company logo
   try {
-    // Get logo from the public directory
-    const logoPath = './public/Civcon Civils Logo.png';
-    doc.addImage(logoPath, 'PNG', 140, 10, 50, 20);
-    console.log('Logo added to PDF successfully with path:', logoPath);
+    // Get absolute path to logo file
+    const logoPath = path.resolve('./public/Civcon Civils Logo.png');
+    console.log('Using logo path:', logoPath);
+    
+    // Check if file exists
+    if (fs.existsSync(logoPath)) {
+      // Read the file as base64
+      const logoData = fs.readFileSync(logoPath, { encoding: 'base64' });
+      const imgData = `data:image/png;base64,${logoData}`;
+      
+      // Add image using base64 data
+      doc.addImage(imgData, 'PNG', 140, 10, 50, 20);
+      console.log('Logo added to PDF successfully');
+    } else {
+      throw new Error('Logo file not found at: ' + logoPath);
+    }
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
     // Fallback text if logo can't be loaded

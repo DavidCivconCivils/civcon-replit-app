@@ -19,12 +19,21 @@ interface PurchaseOrderPreviewProps {
 export default function PurchaseOrderPreview({ data, onExportPdf, onPrint, onEmail }: PurchaseOrderPreviewProps) {
   console.log("PurchaseOrderPreview data:", data);
   
-  // Add null checks/defaults to prevent errors
+  // Add null checks/defaults to prevent errors and type safety
   const items = data.items || [];
-  const requisition = data.requisition || {};
-  const project = data.project || {};
-  const supplier = data.supplier || {};
+  const requisition = data.requisition || {} as Requisition;
+  const project = data.project || {} as Project;
+  const supplier = data.supplier || {} as Supplier;
+  const user = data.user || {} as User;
   const totalAmount = data.totalAmount?.toString() || "0";
+  
+  console.log("Detailed purchase order data:", { 
+    project, 
+    supplier, 
+    requisition, 
+    items, 
+    approver: user 
+  });
   
   return (
     <div className="print-container">
