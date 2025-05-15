@@ -354,16 +354,28 @@ export default function Login() {
             </div>
             <div className="text-center text-sm text-neutral-textLight w-full">
               {activeTab === "login" ? (
-                <span>
-                  Don't have an account?{" "}
-                  <button
-                    className="text-primary hover:underline"
-                    onClick={() => setActiveTab("register")}
-                    type="button"
-                  >
-                    Register
-                  </button>
-                </span>
+                <div className="space-y-2">
+                  <div>
+                    Don't have an account?{" "}
+                    <button
+                      className="text-primary hover:underline"
+                      onClick={() => setActiveTab("register")}
+                      type="button"
+                    >
+                      Register
+                    </button>
+                  </div>
+                  <div>
+                    Forgot your password?{" "}
+                    <button
+                      className="text-primary hover:underline"
+                      onClick={() => setResetPasswordModalOpen(true)}
+                      type="button"
+                    >
+                      Reset password
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <span>
                   Already have an account?{" "}
@@ -386,6 +398,114 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      <Dialog open={resetPasswordModalOpen} onOpenChange={setResetPasswordModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email and new password to reset your account password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {resetPasswordStatus === "success" ? (
+            <div className="py-4">
+              <Alert className="bg-green-50 border-green-500">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <AlertTitle className="text-green-700">Success!</AlertTitle>
+                <AlertDescription className="text-green-700">
+                  Your password has been reset successfully. You can now log in with your new password.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : resetPasswordStatus === "error" ? (
+            <div className="py-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  Failed to reset password. Please check your email and try again.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <Form {...resetPasswordForm}>
+              <form 
+                onSubmit={resetPasswordForm.handleSubmit(handleResetPassword)}
+                className="space-y-4 py-4"
+              >
+                <FormField
+                  control={resetPasswordForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="your.email@example.com"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={resetPasswordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={resetPasswordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter className="pt-4">
+                  <Button
+                    type="submit"
+                    disabled={resetPasswordStatus === "pending"}
+                    className="w-full"
+                  >
+                    {resetPasswordStatus === "pending" ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      "Reset Password"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

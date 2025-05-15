@@ -646,6 +646,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Password reset route
+  app.post('/api/reset-password', async (req, res) => {
+    try {
+      const { email, newPassword } = req.body;
+      
+      if (!email || !newPassword) {
+        return res.status(400).json({ message: "Email and new password are required" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // For security reasons, don't reveal if email exists or not
+        return res.status(200).json({ message: "If your email is registered, a password reset link will be sent." });
+      }
+      
+      // In a real app, we might send an email with a token here
+      // But for this implementation, we'll directly update the password
+      
+      // Update the password using storage's method
+      const updatedUser = await storage.updateUserPassword(user.id, newPassword);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "An error occurred while resetting the password" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
