@@ -148,6 +148,7 @@ export async function generatePDF(
     { header: 'Quantity', dataKey: 'quantity' },
     { header: 'Unit', dataKey: 'unit' },
     { header: 'Unit Price', dataKey: 'unitPrice' },
+    { header: 'VAT', dataKey: 'vatType' },
     { header: 'Total', dataKey: 'totalPrice' }
   ];
   
@@ -158,18 +159,58 @@ export async function generatePDF(
       quantity: item.quantity.toString(),
       unit: item.unit,
       unitPrice: `£${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
+      vatType: item.vatType || 'VAT 20%',
       totalPrice: `£${parseFloat(item.totalPrice.toString()).toFixed(2)}`
     };
   });
   
-  // Calculate total amount
-  const totalAmount = data.items.reduce((sum, item) => sum + parseFloat(item.totalPrice.toString()), 0).toFixed(2);
+  // Calculate subtotal (pre-VAT)
+  const subtotal = data.items.reduce((sum, item) => {
+    const quantity = Number(item.quantity) || 0;
+    const unitPrice = parseFloat(item.unitPrice.toString()) || 0;
+    return sum + (quantity * unitPrice);
+  }, 0).toFixed(2);
+  
+  // Calculate VAT amounts by type
+  let vat20Amount = 0;
+  let vatCisAmount = 0;
+  
+  data.items.forEach(item => {
+    const quantity = Number(item.quantity) || 0;
+    const unitPrice = parseFloat(item.unitPrice.toString()) || 0;
+    const itemSubtotal = quantity * unitPrice;
+    
+    if (item.vatType === "VAT 20%" || !item.vatType) { // Default to 20% if not specified
+      vat20Amount += itemSubtotal * 0.2;
+    } else if (item.vatType === "20% RC CIS (0%)") {
+      vatCisAmount += itemSubtotal * 0.2;
+    }
+    // VAT 0% doesn't add any VAT
+  });
+  
+  // Total amount includes VAT
+  const totalAmount = (parseFloat(subtotal) + vat20Amount).toFixed(2);
+  
+  // Create footer rows according to VAT types used
+  const footerRows = [];
+  footerRows.push(['', '', '', '', '', 'Subtotal:', `£${subtotal}`]);
+  
+  if (vat20Amount > 0) {
+    footerRows.push(['', '', '', '', '', 'VAT @ 20%:', `£${vat20Amount.toFixed(2)}`]);
+  }
+  
+  if (vatCisAmount > 0) {
+    footerRows.push(['', '', '', '', '', 'VAT @ 20% (RC CIS):', `£${vatCisAmount.toFixed(2)}`]);
+    footerRows.push(['', '', '', '', '', 'VAT @ -20% (RC CIS):', `-£${vatCisAmount.toFixed(2)}`]);
+  }
+  
+  footerRows.push(['', '', '', '', '', 'Total:', `£${totalAmount}`]);
   
   autoTable(doc, {
     startY: 105,
     head: [tableColumns.map(col => col.header)],
     body: tableRows.map(row => tableColumns.map(col => row[col.dataKey as keyof typeof row])),
-    foot: [['', '', '', '', 'Total:', `£${totalAmount}`]],
+    foot: footerRows,
     theme: 'striped',
     headStyles: {
       fillColor: [26, 82, 118],
