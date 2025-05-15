@@ -340,10 +340,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Requisition routes
-  app.get('/api/requisitions', isAuthenticated, async (_req, res) => {
+  app.get('/api/requisitions', isAuthenticated, async (req: any, res) => {
     try {
+      // Get all requisitions
       const requisitions = await storage.getRequisitions();
-      res.json(requisitions);
+      
+      // Filter requisitions based on user role
+      let filteredRequisitions;
+      
+      if (req.user.role === 'admin' || req.user.role === 'finance') {
+        // Admin and finance see all requisitions
+        filteredRequisitions = requisitions;
+      } else {
+        // Regular users only see their own requisitions
+        filteredRequisitions = requisitions.filter(requisition => requisition.requestedById === req.user.id);
+      }
+      
+      res.json(filteredRequisitions);
     } catch (error) {
       console.error("Error fetching requisitions:", error);
       res.status(500).json({ message: "Failed to fetch requisitions" });
