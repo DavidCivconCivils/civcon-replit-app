@@ -285,8 +285,9 @@ export async function generatePDF(
   
   // Return PDF as buffer
   try {
-    // Use a cleaner and more efficient approach
-    return Buffer.from(doc.output('arraybuffer'));
+    // Convert to string output, which is supported by jsPDF
+    const base64Data = doc.output('datauristring').split(',')[1];
+    return Buffer.from(base64Data, 'base64');
   } catch (error) {
     console.error('Error generating PDF buffer:', error);
     return Buffer.from([]); // Fallback empty buffer in case of error
