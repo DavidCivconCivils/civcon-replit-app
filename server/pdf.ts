@@ -26,7 +26,12 @@ export async function generatePDF(
   type: 'requisition' | 'purchaseOrder',
   data: RequisitionData | PurchaseOrderData
 ): Promise<Buffer> {
-  const doc = new jsPDF();
+  // Create PDF with compression options
+  const doc = new jsPDF({
+    compress: true,
+    putOnlyUsedFonts: true,
+    precision: 2
+  });
   
   // Add company logo - with compression to reduce file size
   try {
@@ -40,9 +45,9 @@ export async function generatePDF(
       const logoData = fs.readFileSync(logoPath, { encoding: 'base64' });
       const imgData = `data:image/png;base64,${logoData}`;
       
-      // Add image using base64 data with compression options
-      doc.addImage(imgData, 'PNG', 140, 10, 50, 20, undefined, 'FAST', 0.5); // Added compression options
-      console.log('Logo added to PDF successfully with compression');
+      // Add image using base64 data with maximum compression options
+      doc.addImage(imgData, 'PNG', 150, 10, 40, 16, undefined, 'FAST', 0.2); // Smaller size, higher compression
+      console.log('Logo added to PDF successfully with high compression');
     } else {
       throw new Error('Logo file not found at: ' + logoPath);
     }
@@ -60,16 +65,22 @@ export async function generatePDF(
   doc.setFont('helvetica', 'bold');
   doc.text(type === 'requisition' ? 'Purchase Requisition' : 'Purchase Order', 14, 20);
   
-  // Document number - make it more prominent
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
+  // Document number - make it more prominent with highlighting
   const documentNumber = type === 'requisition' 
     ? (data as RequisitionData).requisition.requisitionNumber 
     : (data as PurchaseOrderData).purchaseOrder.poNumber;
   
   if (type === 'purchaseOrder') {
-    doc.text(`Purchase Order Number: ${documentNumber}`, 14, 26);
+    // Add highlight background for PO number (critical)
+    doc.setFillColor(255, 255, 200); // Light yellow highlight
+    doc.rect(14, 22, 100, 9, 'F');
+    
+    doc.setFontSize(14); // Larger font
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Purchase Order Number: ${documentNumber}`, 14, 28);
   } else {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
     doc.text(`Requisition Number: ${documentNumber}`, 14, 26);
   }
   
@@ -272,10 +283,12 @@ export async function generatePDF(
     doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy h:mm a')}`, 160, 285);
   }
   
-  // Return PDF as buffer with compression
-  return Buffer.from(doc.output('arraybuffer', {
-    compress: true,
-    putOnlyUsedFonts: true,
-    precision: 2
-  }));
+  // Return PDF as buffer
+  try {
+    // Use a cleaner and more efficient approach
+    return Buffer.from(doc.output('arraybuffer'));
+  } catch (error) {
+    console.error('Error generating PDF buffer:', error);
+    return Buffer.from([]); // Fallback empty buffer in case of error
+  }
 }
