@@ -18,15 +18,13 @@ import { AuthProvider } from "@/providers/AuthProvider";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (!isAuthenticated) {
-    setLocation("/"); // Redirect to the login page which is now the root
-    return null;
+    return <Redirect to="/" />; // Redirect to the login page which is now the root
   }
 
   return <Component {...rest} />;

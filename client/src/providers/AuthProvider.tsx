@@ -97,19 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
-      return await res.json();
+      await apiRequest("POST", "/api/logout");
+      return { success: true };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
+      // Clear user data from the client-side cache
       queryClient.setQueryData(["/api/user"], null);
       
-      // Redirect to home page after logout
-      if (data && data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      } else {
-        // Fallback to home page if no redirect URL is provided
-        window.location.href = "/";
-      }
+      // Force clear all queries in cache
+      queryClient.clear();
+      
+      // Force a redirect to the login page
+      window.location.href = "/";
       
       toast({
         title: "Logged out",
@@ -117,10 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      // Even on error, try to clear the user data and redirect
+      queryClient.setQueryData(["/api/user"], null);
+      window.location.href = "/";
+      
       toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
+        title: "Logout completed",
+        description: "You have been logged out.",
       });
     },
   });
