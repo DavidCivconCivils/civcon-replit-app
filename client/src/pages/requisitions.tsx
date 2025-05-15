@@ -100,11 +100,14 @@ export default function Requisitions() {
     queryKey: ['/api/requisitions', selectedRequisition],
     queryFn: async () => {
       if (!selectedRequisition) return null;
+      console.log("Fetching details for requisition ID:", selectedRequisition);
       const response = await fetch(`/api/requisitions/${selectedRequisition}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch requisition: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Received requisition data:", data);
+      return data;
     },
     enabled: selectedRequisition !== null
   });
