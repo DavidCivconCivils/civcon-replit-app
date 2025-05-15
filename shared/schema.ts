@@ -164,7 +164,6 @@ export type Requisition = typeof requisitions.$inferSelect;
 
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({
   id: true,
-  poNumber: true,
   createdAt: true,
   updatedAt: true,
 });

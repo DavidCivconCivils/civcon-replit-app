@@ -257,14 +257,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPurchaseOrder(purchaseOrderData: InsertPurchaseOrder): Promise<PurchaseOrder> {
-    // Generate PO number: PO-YYYY-XXXXX
-    const year = new Date().getFullYear();
-    const [{ max }] = await db.select({
-      max: sql<string>`MAX(SUBSTRING(${purchaseOrders.poNumber} FROM '[0-9]+$')::integer)`
-    }).from(purchaseOrders).where(sql`${purchaseOrders.poNumber} LIKE ${'PO-' + year + '-%'}`);
+    let poNumber = purchaseOrderData.poNumber;
     
-    const sequence = max ? parseInt(max) + 1 : 1;
-    const poNumber = `PO-${year}-${sequence.toString().padStart(5, '0')}`;
+    // If no PO number provided, generate one automatically
+    if (!poNumber) {
+      // Generate PO number: PO-YYYY-XXXXX
+      const year = new Date().getFullYear();
+      const [{ max }] = await db.select({
+        max: sql<string>`MAX(SUBSTRING(${purchaseOrders.poNumber} FROM '[0-9]+$')::integer)`
+      }).from(purchaseOrders).where(sql`${purchaseOrders.poNumber} LIKE ${'PO-' + year + '-%'}`);
+      
+      const sequence = max ? parseInt(max) + 1 : 1;
+      poNumber = `PO-${year}-${sequence.toString().padStart(5, '0')}`;
+    }
     
     const [newPurchaseOrder] = await db
       .insert(purchaseOrders)

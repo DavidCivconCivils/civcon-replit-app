@@ -416,9 +416,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid requisition ID" });
       }
       
-      const { status } = req.body;
+      const { status, poNumber } = req.body;
       if (!status || !['pending', 'approved', 'rejected', 'cancelled'].includes(status)) {
         return res.status(400).json({ message: "Invalid status value" });
+      }
+      
+      // If approving, require a PO number
+      if (status === 'approved' && !poNumber) {
+        return res.status(400).json({ message: "Purchase Order number is required for approval" });
       }
       
       const requisition = await storage.getRequisition(id);
@@ -439,13 +444,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate purchase order only if it doesn't exist already
         const existingPO = await storage.getPurchaseOrderByRequisition(id);
         if (!existingPO) {
-          // Create purchase order
+          // Create purchase order with the provided PO number
           const purchaseOrderData = {
             requisitionId: id,
             approvedById: userId,
             issueDate: new Date().toISOString().split('T')[0],
             status: 'issued',
             totalAmount: requisition.totalAmount,
+            poNumber // Use the provided PO number instead of generating one
           };
           
           const purchaseOrder = await storage.createPurchaseOrder(purchaseOrderData);
