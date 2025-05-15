@@ -58,11 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const projectData = insertProjectSchema.parse({
-        ...req.body,
-        userId
-      });
+      // Projects should not be tied to users, just create them in the system
+      const projectData = insertProjectSchema.parse(req.body);
       
       const project = await storage.createProject(projectData);
       res.status(201).json(project);
@@ -151,11 +148,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/suppliers', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const supplierData = insertSupplierSchema.parse({
-        ...req.body,
-        userId
-      });
+      // Suppliers should not be tied to users, just create them in the system
+      const supplierData = insertSupplierSchema.parse(req.body);
       
       const supplier = await storage.createSupplier(supplierData);
       res.status(201).json(supplier);
