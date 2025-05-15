@@ -881,6 +881,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate PDF for purchase order
+  app.get('/api/purchase-orders/:id/pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid purchase order ID" });
+      }
+      
+      // Get the purchase order
+      const purchaseOrder = await storage.getPurchaseOrder(id);
+      if (!purchaseOrder) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+      
+      // Get the related requisition
+      const requisition = await storage.getRequisition(purchaseOrder.requisitionId);
+      if (!requisition) {
+        return res.status(404).json({ message: "Related requisition not found" });
+      }
+      
+      // Get all related data
+      const project = await storage.getProject(requisition.projectId);
+      const supplier = await storage.getSupplier(requisition.supplierId);
+      const approver = await storage.getUser(purchaseOrder.approvedById);
+      const items = await storage.getRequisitionItems(requisition.id);
+      
+      if (!project || !supplier || !approver || !items.length) {
+        return res.status(400).json({ 
+          message: "Missing required data to generate PDF",
+          details: {
+            hasProject: !!project,
+            hasSupplier: !!supplier,
+            hasApprover: !!approver,
+            itemCount: items.length
+          }
+        });
+      }
+      
+      // Generate the PDF
+      const pdfBuffer = await generatePDF('purchaseOrder', {
+        purchaseOrder,
+        requisition,
+        items,
+        project,
+        supplier,
+        approver
+      });
+      
+      // Set the response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="purchase-order-${purchaseOrder.poNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send the PDF
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF", error: String(error) });
+    }
+  });
+  
   // Email a purchase order to supplier
   app.post('/api/purchase-orders/:id/email', isAuthenticated, async (req: any, res) => {
     try {

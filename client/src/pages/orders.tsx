@@ -101,7 +101,7 @@ export default function Orders() {
   });
 
   // Email PO mutation
-  const emailMutation = useMutation({
+  const emailPurchaseOrderMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiRequest("POST", `/api/purchase-orders/${id}/email`);
       return res.json();
