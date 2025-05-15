@@ -311,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/requisitions/:id/status', isAuthenticated, async (req: Request, res: Response) => {
+  app.put('/api/requisitions/:id/status', isAuthenticated, async (req: any, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -323,10 +323,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid status value" });
       }
       
+      const requisition = await storage.getRequisition(id);
+      if (!requisition) {
+        return res.status(404).json({ message: "Requisition not found" });
+      }
+      
+      // Update requisition status
       const updatedRequisition = await storage.updateRequisition(id, { status });
       
-      if (!updatedRequisition) {
-        return res.status(404).json({ message: "Requisition not found" });
+      // If approved, create a purchase order
+      if (status === 'approved') {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        // Generate purchase order only if it doesn't exist already
+        const existingPO = await storage.getPurchaseOrderByRequisition(id);
+        if (!existingPO) {
+          // Create purchase order
+          const purchaseOrderData: InsertPurchaseOrder = {
+            requisitionId: id,
+            approvedById: userId,
+            issueDate: new Date().toISOString().split('T')[0],
+            status: 'issued',
+            totalAmount: requisition.totalAmount,
+          };
+          
+          const purchaseOrder = await storage.createPurchaseOrder(purchaseOrderData);
+          
+          // Send email to supplier and requester if purchase order was created
+          const project = await storage.getProject(requisition.projectId);
+          const supplier = await storage.getSupplier(requisition.supplierId);
+          const requester = await storage.getUser(requisition.requestedById);
+          const items = await storage.getRequisitionItems(requisition.id);
+          
+          if (project && supplier && requester && user) {
+            // Generate PDF
+            const pdfBuffer = await generatePDF('purchaseOrder', {
+              purchaseOrder,
+              requisition,
+              items,
+              project,
+              supplier,
+              approver: user
+            });
+            
+            // Send email to supplier
+            await sendEmail({
+              to: supplier.email,
+              subject: `Purchase Order: ${purchaseOrder.poNumber}`,
+              text: `A new purchase order (${purchaseOrder.poNumber}) has been issued for ${project.name}. Please see attached PDF for details.`,
+              html: `
+                <h1>Purchase Order: ${purchaseOrder.poNumber}</h1>
+                <p>Dear ${supplier.name},</p>
+                <p>We are pleased to issue the attached purchase order for the following:</p>
+                <ul>
+                  <li><strong>Purchase Order Number:</strong> ${purchaseOrder.poNumber}</li>
+                  <li><strong>Project:</strong> ${project.name} (${project.contractNumber})</li>
+                  <li><strong>Total Amount:</strong> $${purchaseOrder.totalAmount}</li>
+                </ul>
+                <p>Please review the attached purchase order for complete details.</p>
+                <p>Regards,<br>Civcon Office</p>
+              `,
+              attachments: [
+                {
+                  filename: `${purchaseOrder.poNumber}.pdf`,
+                  content: pdfBuffer
+                }
+              ]
+            });
+            
+            // Send email to requester
+            await sendEmail({
+              to: requester.email || 'requester@example.com',
+              subject: `Your Requisition ${requisition.requisitionNumber} has been approved`,
+              text: `Your purchase requisition (${requisition.requisitionNumber}) has been approved and Purchase Order ${purchaseOrder.poNumber} has been issued.`,
+              html: `
+                <h1>Requisition Approved</h1>
+                <p>Dear ${requester.firstName || 'User'},</p>
+                <p>We are pleased to inform you that your purchase requisition has been approved:</p>
+                <ul>
+                  <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
+                  <li><strong>Purchase Order Number:</strong> ${purchaseOrder.poNumber}</li>
+                  <li><strong>Project:</strong> ${project.name}</li>
+                  <li><strong>Supplier:</strong> ${supplier.name}</li>
+                  <li><strong>Total Amount:</strong> $${purchaseOrder.totalAmount}</li>
+                </ul>
+                <p>A purchase order has been generated and sent to the supplier.</p>
+                <p>Regards,<br>Civcon Office</p>
+              `,
+              attachments: [
+                {
+                  filename: `${purchaseOrder.poNumber}.pdf`,
+                  content: pdfBuffer
+                }
+              ]
+            });
+          }
+          
+          // Return both the updated requisition and the new purchase order
+          return res.json({ 
+            requisition: updatedRequisition, 
+            purchaseOrder 
+          });
+        }
+      } else if (status === 'rejected') {
+        // Send email notification about rejection
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        const requester = await storage.getUser(requisition.requestedById);
+        const project = await storage.getProject(requisition.projectId);
+        
+        if (requester && project && user) {
+          // Send rejection email to requester
+          await sendEmail({
+            to: requester.email || 'requester@example.com',
+            subject: `Your Requisition ${requisition.requisitionNumber} has been rejected`,
+            text: `Your purchase requisition (${requisition.requisitionNumber}) has been rejected.`,
+            html: `
+              <h1>Requisition Rejected</h1>
+              <p>Dear ${requester.firstName || 'User'},</p>
+              <p>We regret to inform you that your purchase requisition has been rejected:</p>
+              <ul>
+                <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
+                <li><strong>Project:</strong> ${project.name}</li>
+                <li><strong>Total Amount:</strong> $${requisition.totalAmount}</li>
+              </ul>
+              <p>Please contact the finance department if you need more information.</p>
+              <p>Regards,<br>Civcon Office</p>
+            `
+          });
+        }
       }
       
       res.json(updatedRequisition);

@@ -32,11 +32,12 @@ export const sessions = pgTable(
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
+  email: varchar("email").notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("requester").notNull(),
+  role: varchar("role", { length: 50 }).default("requester").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -111,7 +112,17 @@ export const purchaseOrders = pgTable("purchase_orders", {
 
 // Types and Schemas
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("Invalid email format")
+});
+
 export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 export const insertProjectSchema = createInsertSchema(projects).omit({

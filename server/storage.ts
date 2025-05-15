@@ -16,11 +16,13 @@ import {
   type RequisitionItem,
   type InsertRequisitionItem,
   type PurchaseOrder,
-  type InsertPurchaseOrder
+  type InsertPurchaseOrder,
+  type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { format } from "date-fns";
+import * as crypto from "crypto";
 
 // Interface for storage operations
 export interface IStorage {
@@ -88,6 +90,16 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+  
+  async createUser(userData: UpsertUser): Promise<User> {
+    // Generate a random ID if one is not provided
+    if (!userData.id) {
+      userData.id = crypto.randomUUID();
+    }
+    
+    const [user] = await db.insert(users).values(userData).returning();
     return user;
   }
 
