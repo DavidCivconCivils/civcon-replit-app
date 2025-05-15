@@ -12,6 +12,7 @@ import Requisitions from "@/pages/requisitions";
 import Orders from "@/pages/orders";
 import Reports from "@/pages/reports";
 import Login from "@/pages/login";
+import UsersPage from "@/pages/users";
 import MainLayout from "./components/layout/MainLayout";
 import { useAuth } from "./hooks/useAuth";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -77,6 +78,12 @@ function Router() {
       <Route path="/reports">
         <MainLayout>
           <ProtectedRoute component={Reports} />
+        </MainLayout>
+      </Route>
+      
+      <Route path="/users">
+        <MainLayout>
+          <ProtectedRoute component={UsersPage} />
         </MainLayout>
       </Route>
       
