@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext } from "react";
 import {
   useQuery,
   useMutation,
@@ -109,24 +109,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user,
         isLoading,
         error,
         isAuthenticated: !!user,
         loginMutation,
-        logoutMutation,
         registerMutation,
+        logoutMutation,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }
