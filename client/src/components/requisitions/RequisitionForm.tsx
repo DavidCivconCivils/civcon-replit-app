@@ -491,122 +491,54 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.description`}
                               render={({ field }) => (
-                                <Popover 
-                                  open={activeItemCombobox === index} 
-                                  onOpenChange={(open) => {
-                                    if (open) {
-                                      setActiveItemCombobox(index);
-                                      setSearchValue("");
-                                    } else {
-                                      setActiveItemCombobox(null);
+                                <Combobox
+                                  value={field.value}
+                                  onChange={(value) => {
+                                    field.onChange(value);
+                                    
+                                    // Find matching item in catalog
+                                    const matchingItem = supplierItems.find(item => 
+                                      item.itemName === value
+                                    );
+                                    
+                                    if (matchingItem) {
+                                      // Update unit price for this item
+                                      form.setValue(`items.${index}.unitPrice`, matchingItem.unitPrice.toString(), {
+                                        shouldValidate: true,
+                                      });
+                                      
+                                      // Update unit for this item
+                                      form.setValue(`items.${index}.unit`, matchingItem.unit, {
+                                        shouldValidate: true,
+                                      });
+                                      
+                                      // Update VAT type
+                                      form.setValue(`items.${index}.vatType`, matchingItem.vatType || 'VAT 20%');
+                                      
+                                      // Calculate totals after updating values
+                                      calculateTotals();
                                     }
                                   }}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={activeItemCombobox === index}
-                                      className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
-                                    >
-                                      {field.value || "Select or type item..."}
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-[300px] p-0">
-                                    <Command>
-                                      <CommandInput 
-                                        placeholder="Search items or enter new item..." 
-                                        className="h-9"
-                                        value={searchValue}
-                                        onValueChange={setSearchValue}
-                                      />
-                                      <CommandEmpty>
-                                        {searchValue && (
-                                          <CommandItem
-                                            onSelect={() => {
-                                              // Set the form field value
-                                              field.onChange(searchValue);
-                                              
-                                              // Show dialog to add this item to supplier catalog
-                                              setItemToAdd({
-                                                index,
-                                                description: searchValue,
-                                                unit: form.getValues(`items.${index}.unit`) || "Each",
-                                                unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
-                                              });
-                                              setShowAddItemDialog(true);
-                                              
-                                              // Close the combobox
-                                              setActiveItemCombobox(null);
-                                            }}
-                                            className="whitespace-normal break-words"
-                                          >
-                                            + Add new item: {searchValue}
-                                          </CommandItem>
-                                        )}
-                                      </CommandEmpty>
-                                      <CommandGroup heading="From Supplier Catalog">
-                                        {supplierItems.map((item) => (
-                                          <CommandItem
-                                            key={item.id}
-                                            value={item.itemName}
-                                            onSelect={() => {
-                                              field.onChange(item.itemName);
-                                              
-                                              // Update unit price for this item
-                                              form.setValue(`items.${index}.unitPrice`, item.unitPrice.toString(), {
-                                                shouldValidate: true,
-                                              });
-                                              
-                                              // Update unit for this item
-                                              form.setValue(`items.${index}.unit`, item.unit, {
-                                                shouldValidate: true,
-                                              });
-                                              
-                                              // Update VAT type
-                                              form.setValue(`items.${index}.vatType`, item.vatType || 'VAT 20%');
-                                              
-                                              // Calculate totals after updating values
-                                              calculateTotals();
-                                              
-                                              // Close this specific combobox
-                                              setActiveItemCombobox(null);
-                                            }}
-                                          >
-                                            {item.itemName}
-                                          </CommandItem>
-                                        ))}
-                                        
-                                        {/* Always show Add Item option when text is entered */}
-                                        {searchValue && !supplierItems.some(item => 
-                                          item.itemName.toLowerCase() === searchValue.toLowerCase()
-                                        ) && (
-                                          <CommandItem
-                                            onSelect={() => {
-                                              // Set the form field value
-                                              field.onChange(searchValue);
-                                              
-                                              // Show dialog to add this item to supplier catalog
-                                              setItemToAdd({
-                                                index,
-                                                description: searchValue,
-                                                unit: form.getValues(`items.${index}.unit`) || "Each",
-                                                unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
-                                              });
-                                              setShowAddItemDialog(true);
-                                              
-                                              // Close the combobox
-                                              setActiveItemCombobox(null);
-                                            }}
-                                            className="whitespace-normal break-words"
-                                          >
-                                            Add item: {searchValue}
-                                          </CommandItem>
-                                        )}
-                                      </CommandGroup>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
+                                  options={supplierItems.map(item => ({
+                                    value: item.itemName,
+                                    label: item.itemName
+                                  }))}
+                                  placeholder="Select or type item..."
+                                  emptyText="No matching items found"
+                                  showAddNew={true}
+                                  onAddNew={(value) => {
+                                    // Show dialog to add this item to supplier catalog
+                                    setItemToAdd({
+                                      index,
+                                      description: value,
+                                      unit: form.getValues(`items.${index}.unit`) || "Each",
+                                      unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
+                                    });
+                                    setShowAddItemDialog(true);
+                                  }}
+                                  width="w-full"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text p-0 h-auto min-h-0"
+                                />
                               )}
                             />
                           </td>
@@ -685,24 +617,21 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.vatType`}
                               render={({ field }) => (
-                                <Select 
-                                  onValueChange={(value) => {
+                                <BasicDropdown
+                                  value={field.value || "VAT 20%"}
+                                  onChange={(value) => {
                                     field.onChange(value);
                                     calculateTotals();
-                                  }} 
-                                  value={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="w-32 text-sm border-0 focus:ring-0 p-0 px-1">
-                                      <SelectValue placeholder="VAT Type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="VAT 20%">VAT 20%</SelectItem>
-                                    <SelectItem value="VAT 0%">VAT 0%</SelectItem>
-                                    <SelectItem value="20% RC CIS (0%)">20% RC CIS (0%)</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  }}
+                                  options={[
+                                    { value: "VAT 20%", label: "VAT 20%" },
+                                    { value: "VAT 0%", label: "VAT 0%" },
+                                    { value: "20% RC CIS (0%)", label: "20% RC CIS (0%)" }
+                                  ]}
+                                  placeholder="VAT Type"
+                                  width="w-32"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0"
+                                />
                               )}
                             />
                           </td>
