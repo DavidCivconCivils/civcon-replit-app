@@ -523,7 +523,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                           onSelect={() => {
                                             if (searchValue.trim()) {
                                               field.onChange(searchValue);
-                                              setActiveCombobox(null);
+                                              setActiveItemCombobox(null);
                                             }
                                           }}
                                         >
@@ -555,7 +555,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                               calculateTotals();
                                               
                                               // Close this specific combobox
-                                              setActiveCombobox(null);
+                                              setActiveItemCombobox(null);
                                             }}
                                           >
                                             {item.itemName}
