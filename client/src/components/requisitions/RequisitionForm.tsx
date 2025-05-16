@@ -491,7 +491,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.description`}
                               render={({ field }) => (
-                                <Combobox
+                                <BasicDropdown
                                   value={field.value}
                                   onChange={(value) => {
                                     field.onChange(value);
@@ -519,25 +519,17 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                       calculateTotals();
                                     }
                                   }}
-                                  options={supplierItems.map(item => ({
-                                    value: item.itemName,
-                                    label: item.itemName
-                                  }))}
-                                  placeholder="Select or type item..."
-                                  emptyText="No matching items found"
-                                  showAddNew={true}
-                                  onAddNew={(value) => {
-                                    // Show dialog to add this item to supplier catalog
-                                    setItemToAdd({
-                                      index,
-                                      description: value,
-                                      unit: form.getValues(`items.${index}.unit`) || "Each",
-                                      unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
-                                    });
-                                    setShowAddItemDialog(true);
-                                  }}
+                                  options={[
+                                    { value: "", label: "Select or type item..." },
+                                    ...supplierItems.map(item => ({
+                                      value: item.itemName,
+                                      label: item.itemName
+                                    })),
+                                    { value: "add-new", label: "➕ Add new item to catalog" }
+                                  ]}
+                                  placeholder="Select an item"
                                   width="w-full"
-                                  className="border-0 focus:ring-0 text-sm text-neutral-text p-0 h-auto min-h-0"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-8 min-h-0"
                                 />
                               )}
                             />
