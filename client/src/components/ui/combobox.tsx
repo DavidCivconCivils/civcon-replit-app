@@ -51,22 +51,20 @@ export function Combobox({
   const [searchTerm, setSearchTerm] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
   
-  const trimmedSearchTerm = React.useMemo(() => searchTerm.trim(), [searchTerm]);
-  
   const filteredOptions = React.useMemo(() => {
     // Return all options if there's no search term
-    if (!trimmedSearchTerm) {
+    if (!searchTerm || !searchTerm.trim()) {
       return options || [];
     }
     
     // Normalize search term
-    const normalizedSearch = trimmedSearchTerm.toLowerCase();
+    const normalizedSearch = searchTerm.toLowerCase();
     
     // Filter options based on normalized search
     return (options || []).filter(option => 
       option.label.toLowerCase().includes(normalizedSearch)
     );
-  }, [options, trimmedSearchTerm])
+  }, [options, searchTerm])
   
   const selectedOption = options?.find((option) => option.value === value)
 
@@ -125,16 +123,16 @@ export function Combobox({
           />
           <CommandEmpty className="py-2 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && trimmedSearchTerm && (
+            {showAddNew && searchTerm && searchTerm.trim() && (
               <div 
                 className="flex items-center justify-center mt-1 p-1.5 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => {
-                  if (onAddNew) onAddNew(trimmedSearchTerm);
+                  if (onAddNew) onAddNew(searchTerm.trim());
                   setOpen(false);
                 }}
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                <span className="text-primary">Add "{trimmedSearchTerm}"</span>
+                <span className="text-primary">Add "{searchTerm.trim()}"</span>
               </div>
             )}
           </CommandEmpty>
@@ -162,12 +160,12 @@ export function Combobox({
                 />
               </CommandItem>
             ))}
-            {showAddNew && trimmedSearchTerm && (
+            {showAddNew && searchTerm && searchTerm.trim() && (
               <CommandItem
                 key="add-new"
-                value={searchTerm} // Use the raw searchTerm for matching against CommandInput
+                value="add-new"
                 onSelect={() => {
-                  if (onAddNew) onAddNew(trimmedSearchTerm);
+                  if (onAddNew) onAddNew(searchTerm.trim());
                   setOpen(false);
                 }}
                 className={cn(
@@ -177,7 +175,7 @@ export function Combobox({
                 )}
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                <span>Add "{trimmedSearchTerm}"</span>
+                <span>Add "{searchTerm.trim()}"</span>
               </CommandItem>
             )}
           </CommandGroup>
