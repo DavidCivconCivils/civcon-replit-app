@@ -59,8 +59,10 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const [supplierItems, setSupplierItems] = useState<SupplierItem[]>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   // Use a simpler approach with separate states for each row
-  const [activeCombobox, setActiveCombobox] = useState<number | null>(null);
+  const [activeItemCombobox, setActiveItemCombobox] = useState<number | null>(null);
+  const [activeUnitCombobox, setActiveUnitCombobox] = useState<number | null>(null);
   const [searchValue, setSearchValue] = useState<string>("");
+  const [unitSearchValue, setUnitSearchValue] = useState<string>("");
   const [itemToAdd, setItemToAdd] = useState<{
     index: number;
     description: string;
@@ -488,13 +490,13 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               name={`items.${index}.description`}
                               render={({ field }) => (
                                 <Popover 
-                                  open={activeCombobox === index} 
+                                  open={activeItemCombobox === index} 
                                   onOpenChange={(open) => {
                                     if (open) {
-                                      setActiveCombobox(index);
+                                      setActiveItemCombobox(index);
                                       setSearchValue("");
                                     } else {
-                                      setActiveCombobox(null);
+                                      setActiveItemCombobox(null);
                                     }
                                   }}
                                 >
@@ -502,7 +504,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                     <Button
                                       variant="outline"
                                       role="combobox"
-                                      aria-expanded={activeCombobox === index}
+                                      aria-expanded={activeItemCombobox === index}
                                       className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
                                     >
                                       {field.value || "Select or type item..."}
@@ -590,11 +592,22 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.unit`}
                               render={({ field }) => (
-                                <Popover>
+                                <Popover
+                                  open={activeUnitCombobox === index} 
+                                  onOpenChange={(open) => {
+                                    if (open) {
+                                      setActiveUnitCombobox(index);
+                                      setUnitSearchValue("");
+                                    } else {
+                                      setActiveUnitCombobox(null);
+                                    }
+                                  }}
+                                >
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
                                       role="combobox"
+                                      aria-expanded={activeUnitCombobox === index}
                                       className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
                                     >
                                       {field.value || "Select unit..."}
@@ -602,17 +615,32 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   </PopoverTrigger>
                                   <PopoverContent className="w-[200px] p-0">
                                     <Command>
-                                      <CommandInput placeholder="Search units or type new..." className="h-9" />
+                                      <CommandInput 
+                                        placeholder="Search units or type new..." 
+                                        className="h-9"
+                                        value={unitSearchValue}
+                                        onValueChange={setUnitSearchValue}
+                                      />
                                       <CommandEmpty>
-                                        No units found. Type to create a new one.
+                                        <CommandItem
+                                          onSelect={() => {
+                                            if (unitSearchValue.trim()) {
+                                              field.onChange(unitSearchValue);
+                                              setActiveUnitCombobox(null);
+                                            }
+                                          }}
+                                        >
+                                          + Add new unit: {unitSearchValue}
+                                        </CommandItem>
                                       </CommandEmpty>
                                       <CommandGroup>
                                         {["Each", "Meters", "Kg", "Box", "Day", "Hour", "Liter", "Roll", "Pack", "Set", "Ton"].map((unit) => (
                                           <CommandItem
                                             key={unit}
                                             value={unit}
-                                            onSelect={(value) => {
-                                              field.onChange(value);
+                                            onSelect={() => {
+                                              field.onChange(unit);
+                                              setActiveUnitCombobox(null);
                                             }}
                                           >
                                             {unit}
