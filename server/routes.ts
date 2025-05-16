@@ -1267,6 +1267,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch monthly trend" });
     }
   });
+  
+  app.get('/api/reports/user-expenditures', isAuthenticated, async (_req, res) => {
+    try {
+      const data = await storage.getUserExpenditures();
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching user expenditures:", error);
+      res.status(500).json({ message: "Failed to fetch user expenditures" });
+    }
+  });
 
   // Password reset route
   app.post('/api/reset-password', async (req, res) => {

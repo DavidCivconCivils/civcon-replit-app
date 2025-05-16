@@ -429,6 +429,20 @@ export class DatabaseStorage implements IStorage {
     .groupBy(sql`TO_CHAR(${purchaseOrders.issueDate}, 'YYYY-MM')`)
     .orderBy(sql`TO_CHAR(${purchaseOrders.issueDate}, 'YYYY-MM')`);
   }
+
+  async getUserExpenditures(): Promise<{ userId: string, userName: string, totalAmount: string, requisitionCount: number }[]> {
+    return db.select({
+      userId: users.id,
+      userName: sql<string>`CONCAT(${users.firstName}, ' ', ${users.lastName})`,
+      totalAmount: sql<string>`SUM(${requisitions.totalAmount})::text`,
+      requisitionCount: sql<number>`COUNT(${requisitions.id})`
+    })
+    .from(requisitions)
+    .innerJoin(users, eq(requisitions.requestedById, users.id))
+    .where(eq(requisitions.status, 'approved'))
+    .groupBy(users.id, users.firstName, users.lastName)
+    .orderBy(desc(sql`SUM(${requisitions.totalAmount})`));
+  }
 }
 
 export const storage = new DatabaseStorage();

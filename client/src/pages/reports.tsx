@@ -141,6 +141,54 @@ export default function Reports() {
       
       {/* Sample Reports */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* User Expenditures Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center">
+              <BarChart className="mr-2 h-5 w-5" />
+              Expenditure by User
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingUserData ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent"></div>
+              </div>
+            ) : userExpenditures && userExpenditures.length > 0 ? (
+              <>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart
+                      data={userExpenditures}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="userName" tick={{ fontSize: 10 }} />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatCurrency(parseFloat(value as string))} />
+                      <Bar dataKey="totalAmount" fill="#2980b9" name="Total Spent" />
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {userExpenditures.map((user: any, index: number) => (
+                    <div key={user.userId} className="flex justify-between">
+                      <span className="text-sm text-neutral-textLight">
+                        {user.userName} ({user.requisitionCount} requisitions):
+                      </span>
+                      <span className="text-sm font-medium">{formatCurrency(parseFloat(user.totalAmount))}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-64 flex items-center justify-center">
+                <p className="text-neutral-textLight">No user expenditure data available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         {/* Project Expenditure Chart */}
         <Card>
           <CardHeader className="pb-2">
