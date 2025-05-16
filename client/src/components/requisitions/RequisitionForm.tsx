@@ -498,9 +498,17 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                     <Command>
                                       <CommandInput placeholder="Search items or enter new item..." className="h-9" />
                                       <CommandEmpty>
-                                        No items found. Type to create a new one.
+                                        <CommandItem
+                                          value={field.value || ""}
+                                          onSelect={(value) => {
+                                            field.onChange(value);
+                                            // This is a custom item, so we don't auto-populate anything
+                                          }}
+                                        >
+                                          + Add new item: {field.value || ""}
+                                        </CommandItem>
                                       </CommandEmpty>
-                                      <CommandGroup>
+                                      <CommandGroup heading="From Supplier Catalog">
                                         {supplierItems.map((item) => (
                                           <CommandItem
                                             key={item.id}
@@ -524,7 +532,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                               }
                                             }}
                                           >
-                                            {item.description}
+                                            {item.itemName}
                                           </CommandItem>
                                         ))}
                                       </CommandGroup>
