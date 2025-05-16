@@ -47,6 +47,10 @@ export default function Reports() {
     queryKey: ['/api/reports/monthly-trend'],
   });
   
+  const { data: userExpenditures, isLoading: isLoadingUserData } = useQuery({
+    queryKey: ['/api/reports/user-expenditures'],
+  });
+  
   // Colors for charts
   const COLORS = ['#1a5276', '#2980b9', '#3498db', '#5dade2', '#85c1e9'];
   const STATUS_COLORS = {
