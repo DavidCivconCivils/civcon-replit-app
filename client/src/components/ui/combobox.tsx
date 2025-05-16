@@ -36,8 +36,8 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options,
-  value,
+  options = [],
+  value = "",
   onChange,
   placeholder = "Select an option",
   emptyText = "No results found",
@@ -50,13 +50,16 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   
-  const filteredOptions = options.filter((option) => {
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : []
+  
+  const filteredOptions = safeOptions.filter((option) => {
     if (!inputValue) return true
     if (!option || !option.label) return false
     return option.label.toString().toLowerCase().includes(inputValue.toLowerCase())
   })
   
-  const selectedOption = options.find((option) => option && option.value === value)
+  const selectedOption = safeOptions.find((option) => option && option.value === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -111,29 +114,30 @@ export function Combobox({
             )}
           </CommandEmpty>
           <CommandGroup className="max-h-[200px] overflow-y-auto p-1">
-            {filteredOptions.map((option) => option && (
-              <CommandItem
-                key={option.value || ""}
-                value={option.value || ""}
-                onSelect={() => {
-                  if (option && option.value) {
-                    onChange(option.value)
+            {filteredOptions.map((option) => {
+              if (!option) return null;
+              return (
+                <CommandItem
+                  key={option.value || "option-" + Math.random()}
+                  value={option.value || ""}
+                  onSelect={() => {
+                    onChange(option.value || "")
                     setInputValue("")
                     setOpen(false)
-                  }
-                }}
-                className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 aria-selected:bg-primary/5 cursor-pointer"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === option.value ? "opacity-100 text-primary" : "opacity-0"
-                  )}
-                />
-                {option.label || ""}
-              </CommandItem>
-            ))}
-            {showAddNew && inputValue.trim() && (
+                  }}
+                  className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100 text-primary" : "opacity-0"
+                    )}
+                  />
+                  <span>{option.label || ""}</span>
+                </CommandItem>
+              );
+            })}
+            {showAddNew && inputValue && inputValue.trim && inputValue.trim() && (
               <CommandItem
                 value="add-new"
                 onSelect={() => {
