@@ -29,6 +29,7 @@ export default function Suppliers() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deleteSupplier, setDeleteSupplier] = useState<Supplier | null>(null);
+  const [viewingItemsSupplier, setViewingItemsSupplier] = useState<Supplier | null>(null);
 
   // Check if there's a new query param indicating we should open the form
   useEffect(() => {
@@ -159,7 +160,17 @@ export default function Suppliers() {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-primary hover:text-primary-dark"
+                        onClick={() => setViewingItemsSupplier(supplier)}
+                        title="Manage Items"
+                      >
+                        <Package size={16} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-primary hover:text-primary-dark"
                         onClick={() => handleEditSupplier(supplier)}
+                        title="Edit Supplier"
                       >
                         <Edit size={16} />
                       </Button>
@@ -168,6 +179,7 @@ export default function Suppliers() {
                         size="icon" 
                         className="h-8 w-8 text-status-error hover:text-status-error/80"
                         onClick={() => setDeleteSupplier(supplier)}
+                        title="Delete Supplier"
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -222,6 +234,15 @@ export default function Suppliers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Supplier Items Dialog */}
+      {viewingItemsSupplier && (
+        <SupplierItemsDialog
+          supplier={viewingItemsSupplier}
+          isOpen={!!viewingItemsSupplier}
+          onClose={() => setViewingItemsSupplier(null)}
+        />
+      )}
     </div>
   );
 }

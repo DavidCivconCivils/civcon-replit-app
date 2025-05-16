@@ -115,7 +115,10 @@ export default function SupplierItemsDialog({
       const response = await apiRequest(
         "PUT",
         `/api/supplier-items/${data.id}`,
-        data
+        {
+          ...data,
+          unitPrice: data.unitPrice.toString() // Ensure unitPrice is sent as string
+        }
       );
       return response.json();
     },
@@ -163,10 +166,14 @@ export default function SupplierItemsDialog({
     if (editingItem) {
       updateItemMutation.mutate({
         ...editingItem,
-        ...values
+        ...values,
+        unitPrice: values.unitPrice.toString() // Convert to string for API
       });
     } else {
-      createItemMutation.mutate(values);
+      createItemMutation.mutate({
+        ...values,
+        unitPrice: values.unitPrice.toString() // Convert to string for API
+      });
     }
   };
 
