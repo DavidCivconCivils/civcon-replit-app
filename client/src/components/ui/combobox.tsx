@@ -52,6 +52,9 @@ export function Combobox({
   const inputRef = React.useRef<HTMLInputElement>(null)
   
   const filteredOptions = options?.filter((option) => {
+    // Only filter if there's a search term
+    if (!searchTerm.trim()) return true;
+    
     // Normalize both strings for consistent comparison
     const normalizedOption = option.label.toLowerCase().trim();
     const normalizedSearch = searchTerm.toLowerCase().trim();
@@ -149,7 +152,7 @@ export function Combobox({
                 />
               </CommandItem>
             ))}
-            {showAddNew && searchTerm.trim() && filteredOptions.length > 0 && (
+            {showAddNew && searchTerm.trim() && (
               <CommandItem
                 key="add-new"
                 value="add-new"
