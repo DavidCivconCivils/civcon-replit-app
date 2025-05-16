@@ -338,6 +338,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete supplier" });
     }
   });
+  
+  // Supplier Items routes
+  app.get('/api/suppliers/:id/items', isAuthenticated, async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      if (isNaN(supplierId)) {
+        return res.status(400).json({ message: "Invalid supplier ID" });
+      }
+      
+      const items = await storage.getSupplierItems(supplierId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching supplier items:", error);
+      res.status(500).json({ message: "Failed to fetch supplier items" });
+    }
+  });
+  
+  app.post('/api/suppliers/:id/items', isAuthenticated, async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      if (isNaN(supplierId)) {
+        return res.status(400).json({ message: "Invalid supplier ID" });
+      }
+      
+      const itemData = {
+        ...req.body,
+        supplierId
+      };
+      
+      const newItem = await storage.createSupplierItem(itemData);
+      res.status(201).json(newItem);
+    } catch (error) {
+      console.error("Error creating supplier item:", error);
+      res.status(500).json({ message: "Failed to create supplier item" });
+    }
+  });
+  
+  app.put('/api/supplier-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid item ID" });
+      }
+      
+      const updatedItem = await storage.updateSupplierItem(id, req.body);
+      if (!updatedItem) {
+        return res.status(404).json({ message: "Supplier item not found" });
+      }
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating supplier item:", error);
+      res.status(500).json({ message: "Failed to update supplier item" });
+    }
+  });
+  
+  app.delete('/api/supplier-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid item ID" });
+      }
+      
+      const success = await storage.deleteSupplierItem(id);
+      if (!success) {
+        return res.status(404).json({ message: "Supplier item not found" });
+      }
+      
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting supplier item:", error);
+      res.status(500).json({ message: "Failed to delete supplier item" });
+    }
+  });
 
   // Requisition routes
   app.get('/api/requisitions', isAuthenticated, async (req: any, res) => {

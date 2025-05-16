@@ -5,6 +5,7 @@ import {
   requisitions, 
   requisitionItems, 
   purchaseOrders,
+  supplierItems,
   type User, 
   type UpsertUser,
   type Project,
@@ -17,6 +18,8 @@ import {
   type InsertRequisitionItem,
   type PurchaseOrder,
   type InsertPurchaseOrder,
+  type SupplierItem,
+  type InsertSupplierItem,
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -250,6 +253,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Requisition operations
+  // Get requisitions by user
+  async getRequisitionsByUser(userId: string): Promise<Requisition[]> {
+    return db.select().from(requisitions)
+      .where(eq(requisitions.requestedById, userId))
+      .orderBy(desc(requisitions.createdAt));
+  }
+
   async getRequisitions(): Promise<Requisition[]> {
     return db.select().from(requisitions).orderBy(desc(requisitions.createdAt));
   }

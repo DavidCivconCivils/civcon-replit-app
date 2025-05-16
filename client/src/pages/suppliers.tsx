@@ -4,12 +4,13 @@ import { useLocation } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Supplier } from "@shared/schema";
 import SupplierForm from "@/components/suppliers/SupplierForm";
+import SupplierItemsDialog from "@/components/suppliers/SupplierItemsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2, Package } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
