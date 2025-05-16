@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { insertRequisitionSchema, insertRequisitionItemSchema } from "@shared/schema";
+import { insertRequisitionSchema, insertRequisitionItemSchema, insertSupplierItemSchema, SupplierItem } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Send } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Send, PlusCircle } from "lucide-react";
 import RequisitionPreview from "./RequisitionPreview";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 // Combine the schemas for form validation
 const requisitionItemSchema = insertRequisitionItemSchema.extend({
@@ -33,7 +37,15 @@ const formSchema = insertRequisitionSchema.extend({
   }),
 });
 
+// Schema for adding new supplier items
+const addItemSchema = z.object({
+  description: z.string().min(1, "Description is required"),
+  unit: z.string().min(1, "Unit is required"),
+  unitPrice: z.string().min(1, "Price is required"),
+});
+
 type FormValues = z.infer<typeof formSchema>;
+type AddItemFormValues = z.infer<typeof addItemSchema>;
 
 interface RequisitionFormProps {
   onSuccess?: () => void;
@@ -44,6 +56,14 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("basic-info");
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [supplierItems, setSupplierItems] = useState<SupplierItem[]>([]);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [itemToAdd, setItemToAdd] = useState<{
+    index: number;
+    description: string;
+    unit: string;
+    unitPrice: string;
+  } | null>(null);
 
   // Fetch projects and suppliers
   const { data: projects = [] } = useQuery({
@@ -53,7 +73,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['/api/suppliers'],
   });
-  
+
   // Initialize form with user ID already set
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -66,7 +86,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       deliveryAddress: "",
       deliveryInstructions: "",
       totalAmount: "0",
-      requestedById: user?.id, // Set the user ID right away if available
+      requestedById: user?.id,
       items: [
         {
           description: "",
@@ -82,6 +102,26 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     },
   });
 
+  // Get the watched supplier ID
+  const watchedSupplierId = form.watch("supplierId");
+  
+  // Fetch supplier items for the selected supplier
+  const { data: fetchedSupplierItems = [] } = useQuery({
+    queryKey: ['/api/suppliers', watchedSupplierId, 'items'],
+    queryFn: async () => {
+      if (!watchedSupplierId) return [];
+      const response = await fetch(`/api/suppliers/${watchedSupplierId}/items`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!watchedSupplierId,
+  });
+  
+  // Update the local supplier items state when the fetched items change
+  useEffect(() => {
+    setSupplierItems(fetchedSupplierItems);
+  }, [fetchedSupplierItems]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
@@ -96,120 +136,37 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const calculateTotals = () => {
     setTimeout(() => {
       const items = form.getValues("items");
-      const totalAmount = items.reduce((sum, item, index) => {
-        const quantity = Number(item.quantity) || 0;
-        const unitPrice = Number(item.unitPrice) || 0;
-        const basePrice = quantity * unitPrice;
-        const vatType = item.vatType || "VAT 20%";
+      
+      // Calculate totals for each line
+      items.forEach((item, index) => {
+        const quantity = parseFloat(item.quantity.toString());
+        const unitPrice = parseFloat(item.unitPrice);
+        const totalPrice = quantity * unitPrice;
         
-        // Calculate VAT amount based on the selected type
+        // Calculate VAT based on the selected type
         let vatAmount = 0;
-        if (vatType === "VAT 20%") {
-          vatAmount = basePrice * 0.2;
-        } else if (vatType === "20% RC CIS (0%)") {
-          // For this type, we calculate VAT but it's netted to zero
-          vatAmount = 0; // Net effect is zero, but we'll show it in the UI
-          form.setValue(`items.${index}.vatAmount`, (basePrice * 0.2).toFixed(2), {
-            shouldValidate: true
-          });
-        } else {
-          // VAT 0%
-          vatAmount = 0;
+        if (item.vatType === "VAT 20%") {
+          vatAmount = totalPrice * 0.2;
+        } else if (item.vatType === "20% RC CIS (0%)") {
+          // For RC CIS, we show the VAT amount in the display but it nets to zero
+          vatAmount = 0; // Net effect is zero
         }
         
-        // For regular VAT, store the amount
-        if (vatType === "VAT 20%") {
-          form.setValue(`items.${index}.vatAmount`, vatAmount.toFixed(2), {
-            shouldValidate: true
-          });
-        } else if (vatType === "VAT 0%") {
-          form.setValue(`items.${index}.vatAmount`, "0.00", {
-            shouldValidate: true
-          });
-        }
-        
-        const totalPrice = basePrice + (vatType === "VAT 20%" ? vatAmount : 0);
-        
-        // Update item total price (with 2 decimal places for British pounds)
-        form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2), {
-          shouldValidate: true
-        });
-        
-        return sum + totalPrice;
+        // Update the fields in the form
+        form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2));
+        form.setValue(`items.${index}.vatAmount`, vatAmount.toFixed(2));
+      });
+      
+      // Calculate grand total
+      const grandTotal = items.reduce((sum, item) => {
+        return sum + parseFloat(item.totalPrice);
       }, 0);
       
-      // Set the total amount with 2 decimal places for British pounds
-      form.setValue("totalAmount", totalAmount.toFixed(2), {
-        shouldValidate: true
-      });
+      form.setValue("totalAmount", grandTotal.toFixed(2));
     }, 0);
   };
-  
-  // Keep effect for when items are added/removed
-  useEffect(() => {
-    calculateTotals();
-  }, [watchedItems]);
-  
-  // Force render updates when any field changes
-  const [, forceUpdate] = useState({});
-  useEffect(() => {
-    // This will trigger a re-render with the latest form values
-    forceUpdate({});
-  }, [watchedAllFields]);
-  
-  // Update delivery address when project changes
-  useEffect(() => {
-    if (watchedProjectId) {
-      const selectedProject = projects.find((p: any) => p.id === Number(watchedProjectId));
-      if (selectedProject) {
-        // Set project address as delivery address if not already set
-        const currentAddress = form.getValues('deliveryAddress');
-        if (!currentAddress) {
-          form.setValue('deliveryAddress', `${selectedProject.name} Site`, { shouldValidate: true });
-        }
-      }
-    }
-  }, [watchedProjectId, projects, form]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: FormValues) => {
-      const res = await apiRequest("POST", "/api/requisitions", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] });
-      toast({
-        title: "Success",
-        description: "Requisition submitted successfully",
-      });
-      form.reset();
-      setActiveTab("basic-info");
-      if (onSuccess) onSuccess();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit requisition",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: FormValues) => {
-    // Make sure we have the user ID
-    if (user) {
-      data.requestedById = user.id;
-      console.log("Submitting form data:", data);
-      createMutation.mutate(data);
-    } else {
-      toast({
-        title: "Error",
-        description: "User information is missing. Please try logging in again.",
-        variant: "destructive",
-      });
-    }
-  };
-
+  // Add a default new item
   const addItem = () => {
     append({
       description: "",
@@ -220,150 +177,187 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
       vatType: "VAT 20%",
       vatAmount: "0",
     });
+    
+    // Move to items tab if we're not already on it
+    if (activeTab !== "items-info") {
+      setActiveTab("items-info");
+    }
   };
 
-  const navigateTab = (tab: string) => {
-    // Check if the current tab is valid before proceeding
+  // Move to the next tab
+  const goToNextTab = () => {
     if (activeTab === "basic-info") {
-      const isBasicInfoValid = form.trigger([
-        "projectId", 
-        "supplierId", 
-        "requestDate"
-      ]);
-      
-      if (!isBasicInfoValid) return;
+      setActiveTab("items-info");
     } else if (activeTab === "items-info") {
-      const isItemsInfoValid = form.trigger([
-        "items", 
-        "deliveryAddress", 
-        "deliveryDate"
-      ]);
-      
-      if (!isItemsInfoValid) return;
-      
-      // Make sure calculations are up to date before reviewing
-      calculateTotals();
+      setActiveTab("delivery-info");
     }
+  };
+
+  // Move to the previous tab
+  const goToPrevTab = () => {
+    if (activeTab === "delivery-info") {
+      setActiveTab("items-info");
+    } else if (activeTab === "items-info") {
+      setActiveTab("basic-info");
+    }
+  };
+
+  // Form submission handler
+  const createRequisition = async (values: FormValues) => {
+    const project = projects.find(p => p.id === values.projectId);
+    const supplier = suppliers.find(s => s.id === values.supplierId);
     
-    // Force a refresh of the form data when navigating to review
-    if (tab === "review-submit") {
-      // Make sure all calculations are updated before showing the review
-      const formItems = form.getValues("items");
-      
-      // Update all items one more time to ensure values are current
-      formItems.forEach((_, index) => {
-        const quantity = Number(form.getValues(`items.${index}.quantity`)) || 0;
-        const unitPrice = Number(form.getValues(`items.${index}.unitPrice`)) || 0;
-        const totalPrice = quantity * unitPrice;
-        
-        form.setValue(`items.${index}.totalPrice`, totalPrice.toFixed(2));
+    // Preview the requisition in the modal
+    return await apiRequest("POST", "/api/requisitions", {
+      ...values,
+      status: "Pending",
+      project,
+      supplier,
+      user: user,
+    });
+  };
+
+  // Mutation for creating requisitions
+  const mutation = useMutation({
+    mutationFn: createRequisition,
+    onSuccess: () => {
+      toast({
+        title: "Requisition Created",
+        description: "Your requisition has been successfully submitted for approval.",
       });
       
-      // Update the total amount
-      const total = formItems.reduce((sum, item) => {
-        return sum + Number(item.totalPrice);
-      }, 0);
+      // Reset form and preview
+      form.reset();
+      setPreviewVisible(false);
       
-      form.setValue("totalAmount", total.toFixed(2));
-      
-      // This ensures all updated form values are shown in review
-      setTimeout(() => {
-        setActiveTab(tab);
-      }, 50);
-    } else {
-      setActiveTab(tab);
+      // Call success callback if provided
+      if (onSuccess) onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to create requisition. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Form submission handler
+  const onSubmit = (data: FormValues) => {
+    mutation.mutate(data);
+  };
+
+  // Form validation steps before navigating tabs
+  const validateAndGoToNextTab = async () => {
+    if (activeTab === "basic-info") {
+      const result = await form.trigger(["projectId", "supplierId", "requestDate"]);
+      if (result) {
+        goToNextTab();
+      }
+    } else if (activeTab === "items-info") {
+      const result = await form.trigger("items");
+      if (result) {
+        goToNextTab();
+      }
     }
   };
 
-  // Calculation function already defined above
+  // Update delivery address based on selected project
+  useEffect(() => {
+    if (watchedProjectId) {
+      const selectedProject = projects.find(project => project.id === watchedProjectId);
+      if (selectedProject) {
+        form.setValue("deliveryAddress", selectedProject.address || "");
+      }
+    }
+  }, [watchedProjectId, projects, form]);
 
-  const isPending = createMutation.isPending;
+  // Add new supplier item mutation
+  const addItemMutation = useMutation({
+    mutationFn: async (data: AddItemFormValues & { supplierId: number }) => {
+      return await apiRequest("POST", `/api/suppliers/${data.supplierId}/items`, data);
+    },
+    onSuccess: (newItem) => {
+      toast({
+        title: "Item Added",
+        description: "The item has been added to the supplier catalog.",
+      });
+      
+      // Add the new item to the local state
+      setSupplierItems(prevItems => [...prevItems, newItem]);
+      
+      // Close the dialog
+      setShowAddItemDialog(false);
+      setItemToAdd(null);
+      
+      // Refresh supplier items
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers', watchedSupplierId, 'items'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Item",
+        description: error.message || "Failed to add item to the supplier catalog.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const formValues = form.getValues();
-  const selectedProject = projects.find(p => p.id === Number(formValues.projectId));
-  const selectedSupplier = suppliers.find(s => s.id === Number(formValues.supplierId));
+  // Handle adding an item to the supplier catalog
+  const handleAddItemToSupplier = () => {
+    if (!itemToAdd || !watchedSupplierId) return;
+    
+    addItemMutation.mutate({
+      supplierId: watchedSupplierId,
+      description: itemToAdd.description,
+      unit: itemToAdd.unit,
+      unitPrice: itemToAdd.unitPrice,
+    });
+  };
 
-  const renderPreviewSection = () => (
-    <div className="space-y-4">
-      <RequisitionPreview 
-        data={{
-          ...formValues,
-          project: selectedProject,
-          supplier: selectedSupplier,
-          user: user || undefined,
-        }} 
-      />
-      <div className="flex justify-between">
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-neutral-text">Create Purchase Requisition</h2>
         <Button 
-          type="button" 
           variant="outline" 
-          onClick={() => setPreviewVisible(false)}
-          className="mt-4"
+          onClick={() => setPreviewVisible(true)}
         >
-          Back to Edit
-        </Button>
-        <Button 
-          type="button" 
-          onClick={() => form.handleSubmit(onSubmit)()}
-          disabled={isPending}
-          className="mt-4"
-        >
-          {isPending ? "Submitting..." : "Submit Requisition"}
+          Preview Requisition
         </Button>
       </div>
-    </div>
-  );
-
-  const renderFormTabs = () => (
-    <div>
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="border-b border-neutral-secondary mb-4">
-              <TabsTrigger value="basic-info" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                1. Basic Info
-              </TabsTrigger>
-              <TabsTrigger value="items-info" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                2. Items & Delivery
-              </TabsTrigger>
-              <TabsTrigger value="review-submit" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                3. Review & Submit
-              </TabsTrigger>
+            <TabsList className="mb-4 bg-neutral-secondary border">
+              <TabsTrigger value="basic-info">Basic Info</TabsTrigger>
+              <TabsTrigger value="items-info">Items & Delivery</TabsTrigger>
+              <TabsTrigger value="delivery-info">Review & Submit</TabsTrigger>
             </TabsList>
-
+            
             {/* Basic Info Tab */}
             <TabsContent value="basic-info" className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-text">Basic Information</h3>
-                  <p className="text-sm text-neutral-textLight">Enter requisition details</p>
-                </div>
-                {/* Civcon Logo Placeholder */}
-                <div className="h-16 w-40 bg-neutral-secondary flex items-center justify-center rounded border border-neutral-tertiary">
-                  <span className="text-neutral-textLight font-medium">CIVCON LOGO</span>
-                </div>
-              </div>
-              
+              <h3 className="text-lg font-medium text-neutral-text">Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="projectId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Project</FormLabel>
+                      <FormLabel>Project <span className="text-red-500">*</span></FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        onValueChange={(value) => field.onChange(parseInt(value))} 
                         value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select Project" />
+                            <SelectValue placeholder="Select a project" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id.toString()}>
-                              {project.name} ({project.contractNumber})
+                              {project.name} - {project.contractNumber}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -375,31 +369,17 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                 
                 <FormField
                   control={form.control}
-                  name="requestDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Requisition Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
                   name="supplierId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Supplier</FormLabel>
+                      <FormLabel>Supplier <span className="text-red-500">*</span></FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        onValueChange={(value) => field.onChange(parseInt(value))} 
                         value={field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select Supplier" />
+                            <SelectValue placeholder="Select a supplier" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -415,21 +395,42 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                   )}
                 />
                 
-                <FormItem>
-                  <FormLabel>Requested By</FormLabel>
-                  <Input 
-                    value={`${user?.firstName || ''} ${user?.lastName || ''}`} 
-                    disabled 
-                    className="bg-neutral-secondary/20"
-                  />
-                </FormItem>
+                <FormField
+                  control={form.control}
+                  name="requestDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Request Date <span className="text-red-500">*</span></FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="requestedById"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Requested By</FormLabel>
+                      <FormControl>
+                        <Input 
+                          value={user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || ''}
+                          disabled 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end mt-6">
                 <Button 
                   type="button" 
-                  onClick={() => navigateTab("items-info")}
-                  className="bg-primary text-white"
+                  onClick={validateAndGoToNextTab}
                 >
                   Continue to Items
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -455,7 +456,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-neutral-textLight tracking-wider w-16">Action</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-neutral-textLight tracking-wider w-24">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-neutral-secondary">
@@ -467,16 +468,49 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.description`}
                               render={({ field }) => (
-                                <Input 
-                                  {...field} 
-                                  className="w-full border-0 p-0 focus:ring-0 text-sm text-neutral-text" 
-                                  placeholder="Item description..."
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    // No need to call calculateTotals since it's not a price/quantity field
-                                    // But the watch will trigger a re-render for the preview
-                                  }}
-                                />
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
+                                    >
+                                      {field.value || "Select or type item..."}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-[300px] p-0">
+                                    <Command>
+                                      <CommandInput placeholder="Search items or enter new item..." className="h-9" />
+                                      <CommandEmpty>
+                                        No items found. Type to create a new one.
+                                      </CommandEmpty>
+                                      <CommandGroup>
+                                        {supplierItems.map((item) => (
+                                          <CommandItem
+                                            key={item.id}
+                                            value={item.description}
+                                            onSelect={(value) => {
+                                              field.onChange(value);
+                                              // Also set the unit price if from catalog
+                                              const selectedItem = supplierItems.find(item => item.description === value);
+                                              if (selectedItem) {
+                                                form.setValue(`items.${index}.unitPrice`, selectedItem.unitPrice, {
+                                                  shouldValidate: true,
+                                                });
+                                                form.setValue(`items.${index}.unit`, selectedItem.unit, {
+                                                  shouldValidate: true,
+                                                });
+                                                calculateTotals();
+                                              }
+                                            }}
+                                          >
+                                            {item.description}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
                               )}
                             />
                           </td>
@@ -504,25 +538,38 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.unit`}
                               render={({ field }) => (
-                                <Select 
-                                  onValueChange={field.onChange}
-                                  value={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="w-24 border-0 p-0 focus:ring-0 text-sm text-neutral-text">
-                                      <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="Each">Each</SelectItem>
-                                    <SelectItem value="Box">Box</SelectItem>
-                                    <SelectItem value="Pallet">Pallet</SelectItem>
-                                    <SelectItem value="Meter">Meter</SelectItem>
-                                    <SelectItem value="Liter">Liter</SelectItem>
-                                    <SelectItem value="Kg">Kg</SelectItem>
-                                    <SelectItem value="Set">Set</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
+                                    >
+                                      {field.value || "Select unit..."}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-[200px] p-0">
+                                    <Command>
+                                      <CommandInput placeholder="Search units or type new..." className="h-9" />
+                                      <CommandEmpty>
+                                        No units found. Type to create a new one.
+                                      </CommandEmpty>
+                                      <CommandGroup>
+                                        {["Each", "Meters", "Kg", "Box", "Day", "Hour", "Liter", "Roll", "Pack", "Set", "Ton"].map((unit) => (
+                                          <CommandItem
+                                            key={unit}
+                                            value={unit}
+                                            onSelect={(value) => {
+                                              field.onChange(value);
+                                            }}
+                                          >
+                                            {unit}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
                               )}
                             />
                           </td>
@@ -533,9 +580,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               render={({ field }) => (
                                 <Input 
                                   {...field} 
-                                  type="number" 
+                                  type="number"
+                                  step="0.01"
                                   min="0" 
-                                  step="0.01" 
                                   className="block w-24 border-0 p-0 focus:ring-0 text-sm text-neutral-text" 
                                   placeholder="0.00"
                                   onChange={(e) => {
@@ -555,11 +602,11 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     calculateTotals();
-                                  }}
+                                  }} 
                                   value={field.value}
                                 >
                                   <FormControl>
-                                    <SelectTrigger className="w-36 border-0 p-0 focus:ring-0 text-sm text-neutral-text">
+                                    <SelectTrigger className="w-32 text-sm border-0 focus:ring-0 p-0 px-1">
                                       <SelectValue placeholder="VAT Type" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -572,62 +619,83 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.totalPrice`}
-                              render={({ field }) => (
-                                <div className="text-sm font-medium">
-                                  {formatCurrency(parseFloat(field.value))}
-                                </div>
-                              )}
-                            />
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
+                            {formatCurrency(parseFloat(watchedItems[index]?.totalPrice || "0"))}
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap text-right">
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0" 
-                              onClick={() => remove(index)}
-                              disabled={fields.length <= 1}
-                            >
-                              <Trash2 className="h-4 w-4 text-status-error" />
-                            </Button>
+                            <div className="flex justify-end space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                type="button"
+                                className="h-8 w-8 p-0"
+                                onClick={() => {
+                                  if (watchedSupplierId && form.getValues(`items.${index}.description`)) {
+                                    setItemToAdd({
+                                      index,
+                                      description: form.getValues(`items.${index}.description`),
+                                      unit: form.getValues(`items.${index}.unit`),
+                                      unitPrice: form.getValues(`items.${index}.unitPrice`),
+                                    });
+                                    setShowAddItemDialog(true);
+                                  } else {
+                                    toast({
+                                      title: "Cannot Add Item",
+                                      description: "Please select a supplier and enter item details first.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                type="button"
+                                className="h-8 w-8 p-0"
+                                onClick={() => {
+                                  if (fields.length > 1) {
+                                    remove(index);
+                                    calculateTotals();
+                                  } else {
+                                    toast({
+                                      title: "Cannot Remove",
+                                      description: "At least one item is required.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td colSpan={7} className="px-4 py-2">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-xs" 
-                            onClick={addItem}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Item
-                          </Button>
-                        </td>
-                      </tr>
-                      <tr className="border-t">
-                        <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                          Total Amount:
-                        </td>
-                        <td className="px-4 py-2 font-bold text-primary">
-                          {formatCurrency(parseFloat(form.getValues().totalAmount))}
+                        <td colSpan={6} className="px-4 py-3 text-right font-medium">Total:</td>
+                        <td className="px-4 py-3 font-medium">
+                          {formatCurrency(parseFloat(form.watch("totalAmount")))}
                         </td>
                         <td></td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addItem}
+                  className="mt-2"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Item
+                </Button>
               </div>
               
-              {/* Delivery Information */}
               <div className="mt-6">
                 <h4 className="text-md font-medium text-neutral-text mb-2">Delivery Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -636,14 +704,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                     name="deliveryDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Required Delivery Date *</FormLabel>
+                        <FormLabel>Delivery Date <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input 
-                            type="date" 
-                            {...field} 
-                            required
-                            min={new Date().toISOString().split('T')[0]}  
-                          />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -655,14 +718,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                     name="deliveryAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Delivery Address *</FormLabel>
+                        <FormLabel>Delivery Address <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="Enter delivery address" 
-                            required
-                            className={!field.value ? "border-rose-300" : ""}
-                          />
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -675,14 +733,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                       name="deliveryInstructions"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Delivery Instructions (Optional)</FormLabel>
+                          <FormLabel>Delivery Instructions</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              {...field} 
-                              placeholder="Enter any special delivery instructions" 
-                              rows={3}
-                              value={field.value || ''} 
-                            />
+                            <Textarea rows={3} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -692,19 +745,18 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                 </div>
               </div>
               
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between mt-6">
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => navigateTab("basic-info")}
+                  onClick={goToPrevTab}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  Back to Basic Info
                 </Button>
                 <Button 
                   type="button" 
-                  onClick={() => navigateTab("review-submit")}
-                  className="bg-primary text-white"
+                  onClick={validateAndGoToNextTab}
                 >
                   Continue to Review
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -713,279 +765,230 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
             </TabsContent>
             
             {/* Review & Submit Tab */}
-            <TabsContent value="review-submit" className="space-y-4">
-              {/* Force a new render with fresh form values when this tab is shown */}
-              {activeTab === "review-submit" && (
-                <></>
-              )}
+            <TabsContent value="delivery-info" className="space-y-6">
               <h3 className="text-lg font-medium text-neutral-text">Review & Submit</h3>
               
-              <div className="bg-neutral-secondary/20 p-4 rounded-md">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Project</h4>
-                    <p className="text-sm text-neutral-textLight">
-                      {selectedProject ? `${selectedProject.name} (${selectedProject.contractNumber})` : 'Not selected'}
-                    </p>
+              <div className="bg-neutral-background p-4 rounded-md shadow-sm border">
+                <h4 className="text-md font-medium mb-2">Requisition Summary</h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Project</h5>
+                      <p className="text-sm">
+                        {projects.find(p => p.id === form.getValues("projectId"))?.name || "Not selected"}
+                      </p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Supplier</h5>
+                      <p className="text-sm">
+                        {suppliers.find(s => s.id === form.getValues("supplierId"))?.name || "Not selected"}
+                      </p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Request Date</h5>
+                      <p className="text-sm">{form.getValues("requestDate")}</p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Delivery Date</h5>
+                      <p className="text-sm">{form.getValues("deliveryDate")}</p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Delivery Address</h5>
+                      <p className="text-sm">{form.getValues("deliveryAddress")}</p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-1">Requester</h5>
+                      <p className="text-sm">
+                        {user?.firstName && user?.lastName 
+                          ? `${user.firstName} ${user.lastName}`
+                          : user?.email || "Unknown"}
+                      </p>
+                    </div>
                   </div>
+                  
                   <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Supplier</h4>
-                    <p className="text-sm text-neutral-textLight">
-                      {selectedSupplier ? selectedSupplier.name : 'Not selected'}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Requisition Date</h4>
-                    <p className="text-sm text-neutral-textLight">{formValues.requestDate}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Requested By</h4>
-                    <p className="text-sm text-neutral-textLight">{`${user?.firstName || ''} ${user?.lastName || ''}`}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Delivery Date</h4>
-                    <p className="text-sm text-neutral-textLight">{formValues.deliveryDate}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-text">Delivery Address</h4>
-                    <p className="text-sm text-neutral-textLight">{formValues.deliveryAddress}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <h4 className="text-sm font-medium text-neutral-text">Delivery Instructions</h4>
-                    <p className="text-sm text-neutral-textLight">{formValues.deliveryInstructions || 'None'}</p>
+                    <h5 className="text-sm font-medium mb-1">Items</h5>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border border-neutral-secondary">
+                        <thead className="bg-neutral-secondary">
+                          <tr>
+                            <th className="px-2 py-1 text-left text-xs">#</th>
+                            <th className="px-2 py-1 text-left text-xs">Description</th>
+                            <th className="px-2 py-1 text-left text-xs">Quantity</th>
+                            <th className="px-2 py-1 text-left text-xs">Unit</th>
+                            <th className="px-2 py-1 text-left text-xs">Unit Price</th>
+                            <th className="px-2 py-1 text-left text-xs">VAT</th>
+                            <th className="px-2 py-1 text-left text-xs">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {form.getValues("items").map((item, idx) => (
+                            <tr key={idx} className="border-b border-neutral-secondary">
+                              <td className="px-2 py-1 text-xs">{idx + 1}</td>
+                              <td className="px-2 py-1 text-xs">{item.description}</td>
+                              <td className="px-2 py-1 text-xs">{item.quantity}</td>
+                              <td className="px-2 py-1 text-xs">{item.unit}</td>
+                              <td className="px-2 py-1 text-xs">{formatCurrency(parseFloat(item.unitPrice))}</td>
+                              <td className="px-2 py-1 text-xs">{item.vatType}</td>
+                              <td className="px-2 py-1 text-xs">{formatCurrency(parseFloat(item.totalPrice))}</td>
+                            </tr>
+                          ))}
+                          <tr>
+                            <td colSpan={6} className="px-2 py-1 text-right text-xs font-medium">Total:</td>
+                            <td className="px-2 py-1 text-xs font-medium">
+                              {formatCurrency(parseFloat(form.getValues("totalAmount")))}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="mt-4">
-                <h4 className="text-md font-medium text-neutral-text mb-2">Items Summary</h4>
-                <div className="overflow-x-auto border rounded-md">
-                  <table className="min-w-full divide-y divide-neutral-secondary">
-                    <thead className="bg-neutral-secondary">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">#</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Description</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT Type</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-neutral-secondary">
-                      {/* Get the latest values directly from the form instead of using fields array */}
-                      {form.getValues("items").map((item, index) => (
-                        <tr key={`item-row-${index}`}>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{index + 1}</td>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{item.quantity}</td>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{item.unit}</td>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{formatCurrency(parseFloat(item.unitPrice))}</td>
-                          <td className="px-4 py-2 text-sm text-neutral-text">{item.vatType || 'VAT 20%'}</td>
-                          <td className="px-4 py-2 text-sm font-medium text-neutral-text">{formatCurrency(parseFloat(item.totalPrice))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      {(() => {
-                        // Calculate subtotal and various VAT amounts
-                        const items = form.getValues("items");
-                        const subtotal = items.reduce((sum, item) => {
-                          const quantity = Number(item.quantity) || 0;
-                          const unitPrice = parseFloat(item.unitPrice) || 0;
-                          return sum + (quantity * unitPrice);
-                        }, 0);
-                        
-                        // Group items by VAT type and calculate amounts
-                        const vatAmounts = {
-                          "VAT 0%": 0,
-                          "VAT 20%": 0,
-                          "20% RC CIS (0%)": 0
-                        };
-                        
-                        items.forEach(item => {
-                          const quantity = Number(item.quantity) || 0;
-                          const unitPrice = parseFloat(item.unitPrice) || 0;
-                          const itemSubtotal = quantity * unitPrice;
-                          const vatType = item.vatType || "VAT 20%";
-                          
-                          if (vatType === "VAT 20%") {
-                            vatAmounts["VAT 20%"] += itemSubtotal * 0.2;
-                          } else if (vatType === "20% RC CIS (0%)") {
-                            vatAmounts["20% RC CIS (0%)"] += itemSubtotal * 0.2;
-                          }
-                        });
-                        
-                        const rows = [];
-                        
-                        // Add subtotal row
-                        rows.push(
-                          <tr key="subtotal" className="border-t">
-                            <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                              Subtotal:
-                            </td>
-                            <td className="px-4 py-2 font-medium">
-                              {formatCurrency(subtotal)}
-                            </td>
-                          </tr>
-                        );
-                        
-                        // Add VAT summary rows based on what's used
-                        if (vatAmounts["VAT 0%"] > 0) {
-                          rows.push(
-                            <tr key="vat-0" className="border-t-0">
-                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                                No VAT:
-                              </td>
-                              <td className="px-4 py-2 font-medium">
-                                {formatCurrency(0)}
-                              </td>
-                            </tr>
-                          );
-                        }
-                        
-                        if (vatAmounts["VAT 20%"] > 0) {
-                          rows.push(
-                            <tr key="vat-20" className="border-t-0">
-                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                                VAT 20%:
-                              </td>
-                              <td className="px-4 py-2 font-medium">
-                                {formatCurrency(vatAmounts["VAT 20%"])}
-                              </td>
-                            </tr>
-                          );
-                        }
-                        
-                        if (vatAmounts["20% RC CIS (0%)"] > 0) {
-                          rows.push(
-                            <tr key="vat-cis-1" className="border-t-0">
-                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                                VAT 20%:
-                              </td>
-                              <td className="px-4 py-2 font-medium">
-                                {formatCurrency(vatAmounts["20% RC CIS (0%)"])}
-                              </td>
-                            </tr>
-                          );
-                          
-                          rows.push(
-                            <tr key="vat-cis-2" className="border-t-0">
-                              <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                                VAT -20%:
-                              </td>
-                              <td className="px-4 py-2 font-medium">
-                                {formatCurrency(-vatAmounts["20% RC CIS (0%)"])}
-                              </td>
-                            </tr>
-                          );
-                        }
-                        
-                        // Add total row
-                        rows.push(
-                          <tr key="total" className="border-t bg-neutral-secondary/20">
-                            <td colSpan={5} className="px-4 py-2 text-right font-medium">
-                              Total Amount:
-                            </td>
-                            <td className="px-4 py-2 font-bold text-primary">
-                              {formatCurrency(parseFloat(form.getValues().totalAmount))}
-                            </td>
-                          </tr>
-                        );
-                        
-                        return rows;
-                      })()}
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="terms"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 mt-6">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value} 
+                        onCheckedChange={field.onChange} 
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        I agree to the terms and conditions <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <p className="text-sm text-neutral-textLight">
+                        By submitting this requisition, I confirm that all details are accurate and the items are required for the specified project.
+                      </p>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <div className="border p-4 rounded-md mt-6">
-                <FormField
-                  control={form.control}
-                  name="terms"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          I agree to the terms and conditions
-                        </FormLabel>
-                        <p className="text-xs text-neutral-textLight">
-                          By submitting this requisition, I confirm that all information is accurate and approve the purchase of items listed above.
-                        </p>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between mt-6">
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => navigateTab("items-info")}
+                  onClick={goToPrevTab}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  Back to Items
                 </Button>
                 <Button 
-                  type="button" 
-                  disabled={isPending || !form.watch("terms")}
-                  className="bg-primary text-white"
-                  onClick={async () => {
-                    // Manually trigger validation and submit
-                    const isValid = await form.trigger();
-                    if (isValid) {
-                      form.handleSubmit(onSubmit)();
-                    } else {
-                      // Show specific errors
-                      const errors = form.formState.errors;
-                      const errorFields = Object.keys(errors);
-                      
-                      // Create readable error message
-                      let errorMessage = "Please fix the following errors:";
-                      errorFields.forEach(field => {
-                        const error = errors[field];
-                        if (error?.message) {
-                          if (field.includes('items')) {
-                            errorMessage += `\n• Item ${field.split('.')[1]} ${error.message}`;
-                          } else {
-                            errorMessage += `\n• ${field}: ${error.message}`;
-                          }
-                        }
-                      });
-                      
-                      toast({
-                        title: "Validation Error",
-                        description: errorMessage,
-                        variant: "destructive",
-                      });
-                      
-                      console.log("Form errors:", errors);
-                    }
-                  }}
+                  type="submit" 
+                  disabled={mutation.isPending}
                 >
-                  {isPending ? "Submitting..." : "Submit Requisition"}
-                  <Send className="ml-2 h-4 w-4" />
+                  {mutation.isPending ? (
+                    <>Submitting...</>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Requisition
+                    </>
+                  )}
                 </Button>
               </div>
             </TabsContent>
           </Tabs>
         </form>
       </Form>
-    </div>
-  );
-
-  return (
-    <div className="bg-white rounded-lg shadow p-4">
-      {previewVisible ? renderPreviewSection() : renderFormTabs()}
+      
+      {/* Preview Modal */}
+      {previewVisible && (
+        <Dialog open={previewVisible} onOpenChange={setPreviewVisible}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Requisition Preview</DialogTitle>
+            </DialogHeader>
+            <RequisitionPreview
+              requisition={{
+                requisitionNumber: "DRAFT",
+                project: projects.find(p => p.id === form.getValues("projectId")),
+                supplier: suppliers.find(s => s.id === form.getValues("supplierId")),
+                requestDate: form.getValues("requestDate"),
+                deliveryDate: form.getValues("deliveryDate"),
+                deliveryAddress: form.getValues("deliveryAddress"),
+                deliveryInstructions: form.getValues("deliveryInstructions"),
+                items: form.getValues("items"),
+                totalAmount: form.getValues("totalAmount"),
+                status: "Draft",
+                requestedById: user?.id || "",
+                user: user,
+              }}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPreviewVisible(false)}>
+                Close Preview
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Add to Supplier Dialog */}
+      <Dialog open={showAddItemDialog} onOpenChange={setShowAddItemDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Item to Supplier Catalog</DialogTitle>
+            <DialogDescription>
+              This will add the item to this supplier's catalog for future use.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Item Description</FormLabel>
+              <Input 
+                value={itemToAdd?.description || ''} 
+                onChange={(e) => setItemToAdd(prev => prev ? {
+                  ...prev, 
+                  description: e.target.value
+                } : null)} 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FormLabel>Unit</FormLabel>
+                <Input 
+                  value={itemToAdd?.unit || ''} 
+                  onChange={(e) => setItemToAdd(prev => prev ? {
+                    ...prev, 
+                    unit: e.target.value
+                  } : null)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <FormLabel>Unit Price</FormLabel>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={itemToAdd?.unitPrice || ''} 
+                  onChange={(e) => setItemToAdd(prev => prev ? {
+                    ...prev, 
+                    unitPrice: e.target.value
+                  } : null)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddItemDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAddItemToSupplier}
+              disabled={addItemMutation.isPending}
+            >
+              {addItemMutation.isPending ? "Adding..." : "Add to Catalog"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
