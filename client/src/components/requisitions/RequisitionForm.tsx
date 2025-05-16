@@ -573,6 +573,32 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                             {item.itemName}
                                           </CommandItem>
                                         ))}
+                                        
+                                        {/* Always show Add Item option when text is entered */}
+                                        {searchValue.trim() && !supplierItems.some(item => 
+                                          item.itemName.toLowerCase() === searchValue.toLowerCase()
+                                        ) && (
+                                          <CommandItem
+                                            onSelect={() => {
+                                              // Set the form field value
+                                              field.onChange(searchValue);
+                                              
+                                              // Show dialog to add this item to supplier catalog
+                                              setItemToAdd({
+                                                index,
+                                                description: searchValue,
+                                                unit: form.getValues(`items.${index}.unit`) || "Each",
+                                                unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
+                                              });
+                                              setShowAddItemDialog(true);
+                                              
+                                              // Close the combobox
+                                              setActiveItemCombobox(null);
+                                            }}
+                                          >
+                                            Add item: {searchValue}
+                                          </CommandItem>
+                                        )}
                                       </CommandGroup>
                                     </Command>
                                   </PopoverContent>
