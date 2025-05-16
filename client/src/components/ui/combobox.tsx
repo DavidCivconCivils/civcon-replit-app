@@ -114,12 +114,12 @@ export function Combobox({
               <CommandItem
                 key={option.value}
                 value={option.value}
-                onSelect={(currentValue) => {
-                  onChange(currentValue)
+                onSelect={() => {
+                  onChange(option.value)
                   setInputValue("")
                   setOpen(false)
                 }}
-                className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 aria-selected:bg-primary/5"
+                className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 aria-selected:bg-primary/5 cursor-pointer"
               >
                 <Check
                   className={cn(
@@ -140,7 +140,7 @@ export function Combobox({
                   setInputValue("")
                   setOpen(false)
                 }}
-                className="rounded-lg py-2 px-3 text-sm flex items-center justify-center text-primary"
+                className="rounded-lg py-2 px-3 text-sm flex items-center justify-center text-primary cursor-pointer"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 <span>Add "{inputValue.trim()}"</span>
