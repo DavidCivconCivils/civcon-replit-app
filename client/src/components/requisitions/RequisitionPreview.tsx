@@ -48,6 +48,11 @@ interface RequisitionPreviewProps {
 export default function RequisitionPreview({ requisition, onExportPdf, onPrint, onEmail }: RequisitionPreviewProps) {
   console.log("RequisitionPreview data:", requisition);
   
+  // Return a loading state or null if requisition is undefined
+  if (!requisition) {
+    return <div className="p-4">Loading requisition details...</div>;
+  }
+  
   return (
     <div className="print-container">
       {/* Requisition Header */}
@@ -98,7 +103,7 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
           <>
             <p className="font-medium">{requisition.supplier.name}</p>
             {requisition.supplier.address && <p className="text-sm">{requisition.supplier.address}</p>}
-            {data.supplier.email && <p className="text-sm text-primary">{data.supplier.email}</p>}
+            {requisition.supplier.email && <p className="text-sm text-primary">{requisition.supplier.email}</p>}
           </>
         ) : (
           <p className="text-sm text-neutral-textLight">No supplier selected</p>
@@ -121,7 +126,7 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-secondary">
-            {data.items && data.items.length > 0 ? data.items.map((item, index) => (
+            {requisition.items && requisition.items.length > 0 ? requisition.items.map((item, index) => (
               <tr key={index}>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
                 <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
@@ -149,7 +154,7 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
             {/* Calculate subtotal and VAT amounts based on items */}
             {(() => {
               // Calculate totals
-              const subtotal = data.items.reduce((sum, item) => {
+              const subtotal = requisition.items.reduce((sum, item) => {
                 const quantity = Number(item.quantity) || 0;
                 const unitPrice = parseFloat(item.unitPrice) || 0;
                 return sum + (quantity * unitPrice);
@@ -160,7 +165,7 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
               let vatCisAmount = 0;
               let vat0Items = false;
               
-              data.items.forEach(item => {
+              requisition.items.forEach(item => {
                 const quantity = Number(item.quantity) || 0;
                 const unitPrice = parseFloat(item.unitPrice) || 0;
                 const itemSubtotal = quantity * unitPrice;
@@ -231,30 +236,30 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
       <div className="grid grid-cols-1 gap-4 mb-6">
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Address:</p>
-          <p className="font-medium">{data.deliveryAddress || "N/A"}</p>
+          <p className="font-medium">{requisition.deliveryAddress || "N/A"}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Delivery Date:</p>
-          <p className="font-medium">{formatDate(data.deliveryDate)}</p>
+          <p className="font-medium">{formatDate(requisition.deliveryDate)}</p>
         </div>
-        {data.deliveryInstructions && (
+        {requisition.deliveryInstructions && (
           <div>
             <p className="text-sm text-neutral-textLight">Delivery Instructions:</p>
-            <p className="font-medium">{data.deliveryInstructions}</p>
+            <p className="font-medium">{requisition.deliveryInstructions}</p>
           </div>
         )}
       </div>
       
       {/* Rejection Reason (if rejected) */}
-      {data.status === "rejected" && data.rejectionReason && (
+      {requisition.status === "rejected" && requisition.rejectionReason && (
         <div className="bg-red-50 p-4 rounded-md mb-6 border border-red-200">
           <h4 className="font-medium mb-2 text-red-800">Rejection Reason</h4>
-          <p className="text-red-700">{data.rejectionReason}</p>
+          <p className="text-red-700">{requisition.rejectionReason}</p>
         </div>
       )}
       
       {/* Terms and Conditions */}
-      {data.terms && (
+      {requisition.terms && (
         <div className="bg-neutral p-4 rounded-md mb-6">
           <h4 className="font-medium mb-2">Terms and Conditions</h4>
           <p className="text-sm">By submitting this requisition, I confirm that all information is accurate and approve the purchase of items listed above.</p>
@@ -266,12 +271,12 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
         <div>
           <p className="text-sm text-neutral-textLight">Requested By:</p>
           <p className="font-medium">
-            {data.user ? `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email : "Unknown User"}
+            {requisition.user ? `${requisition.user.firstName || ''} ${requisition.user.lastName || ''}`.trim() || requisition.user.email : "Unknown User"}
           </p>
           <p className="text-xs text-neutral-textLight">
-            {data.user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
+            {requisition.user?.role === 'finance' ? 'Finance Team' : 'Project Manager'}
           </p>
-          <p className="text-xs text-neutral-textLight">{formatDate(data.requestDate)}</p>
+          <p className="text-xs text-neutral-textLight">{formatDate(requisition.requestDate)}</p>
         </div>
       </div>
       

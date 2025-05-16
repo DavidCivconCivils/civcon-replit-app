@@ -416,7 +416,7 @@ export default function Requisitions() {
                 </div>
               ) : requisitionDetails ? (
                 <RequisitionPreview 
-                  data={requisitionDetails} 
+                  requisition={requisitionDetails} 
                   onExportPdf={handleExportPdf}
                   onEmail={handleEmailRequisition}
                 />
