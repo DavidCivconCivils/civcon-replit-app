@@ -472,21 +472,21 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                   <table className="min-w-full divide-y divide-neutral-secondary">
                     <thead className="bg-neutral-secondary">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider w-12">#</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Description</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">VAT</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-neutral-textLight tracking-wider w-24">Action</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider w-12">#</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">Description</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">Quantity</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">Unit</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">Unit Price</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">VAT</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider">Total</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-neutral-textLight tracking-wider w-16">Action</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-neutral-secondary">
                       {fields.map((field, index) => (
                         <tr key={field.id}>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text text-center">{index + 1}</td>
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
                             <FormField
                               control={form.control}
                               name={`items.${index}.description`}
@@ -542,7 +542,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
                             <FormField
                               control={form.control}
                               name={`items.${index}.quantity`}
@@ -551,7 +551,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   {...field} 
                                   type="number" 
                                   min="1" 
-                                  className="block w-20 border-0 p-0 focus:ring-0 text-sm text-neutral-text" 
+                                  className="block w-20 border-0 p-0 focus:ring-0 text-sm text-neutral-text text-center mx-auto" 
                                   placeholder="Qty"
                                   onChange={(e) => {
                                     field.onChange(e);
