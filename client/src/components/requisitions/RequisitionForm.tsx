@@ -504,18 +504,22 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                         {supplierItems.map((item) => (
                                           <CommandItem
                                             key={item.id}
-                                            value={item.description}
+                                            value={item.itemName}
                                             onSelect={(value) => {
                                               field.onChange(value);
-                                              // Also set the unit price if from catalog
-                                              const selectedItem = supplierItems.find(item => item.description === value);
+                                              // Also set the unit price and unit if from catalog
+                                              const selectedItem = supplierItems.find(i => i.itemName === value);
                                               if (selectedItem) {
-                                                form.setValue(`items.${index}.unitPrice`, selectedItem.unitPrice, {
+                                                // Update unit price for this item
+                                                form.setValue(`items.${index}.unitPrice`, selectedItem.unitPrice.toString(), {
                                                   shouldValidate: true,
                                                 });
+                                                // Update unit for this item
                                                 form.setValue(`items.${index}.unit`, selectedItem.unit, {
                                                   shouldValidate: true,
                                                 });
+                                                // Update VAT type
+                                                form.setValue(`items.${index}.vatType`, selectedItem.vatType || 'VAT 20%');
                                                 calculateTotals();
                                               }
                                             }}
