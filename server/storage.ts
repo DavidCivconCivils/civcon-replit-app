@@ -49,10 +49,18 @@ export interface IStorage {
   updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number): Promise<boolean>;
   
+  // Supplier Items operations
+  getSupplierItems(supplierId: number): Promise<SupplierItem[]>;
+  getSupplierItem(id: number): Promise<SupplierItem | undefined>;
+  createSupplierItem(item: InsertSupplierItem): Promise<SupplierItem>;
+  updateSupplierItem(id: number, item: Partial<InsertSupplierItem>): Promise<SupplierItem | undefined>;
+  deleteSupplierItem(id: number): Promise<boolean>;
+  
   // Requisition operations
   getRequisitions(): Promise<Requisition[]>;
   getRequisition(id: number): Promise<Requisition | undefined>;
   getRequisitionByNumber(number: string): Promise<Requisition | undefined>;
+  getRequisitionsByUser(userId: string): Promise<Requisition[]>;
   createRequisition(requisition: InsertRequisition, items: InsertRequisitionItem[]): Promise<Requisition>;
   updateRequisition(id: number, requisition: Partial<InsertRequisition>): Promise<Requisition | undefined>;
   getRequisitionItems(requisitionId: number): Promise<RequisitionItem[]>;
@@ -68,6 +76,7 @@ export interface IStorage {
   getRequisitionsByStatus(): Promise<{ status: string, count: number }[]>;
   getTopSuppliers(limit: number): Promise<{ supplierId: number, supplierName: string, orderCount: number, totalAmount: string }[]>;
   getMonthlyPurchaseTrend(): Promise<{ month: string, totalAmount: string, orderCount: number }[]>;
+  getUserExpenditures(): Promise<{ userId: string, userName: string, totalAmount: string, requisitionCount: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,6 +214,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplier(id: number): Promise<boolean> {
     const result = await db.delete(suppliers).where(eq(suppliers.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // Supplier Items operations
+  async getSupplierItems(supplierId: number): Promise<SupplierItem[]> {
+    return db.select().from(supplierItems).where(eq(supplierItems.supplierId, supplierId));
+  }
+
+  async getSupplierItem(id: number): Promise<SupplierItem | undefined> {
+    const [item] = await db.select().from(supplierItems).where(eq(supplierItems.id, id));
+    return item;
+  }
+
+  async createSupplierItem(item: InsertSupplierItem): Promise<SupplierItem> {
+    const [newItem] = await db.insert(supplierItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateSupplierItem(id: number, itemData: Partial<InsertSupplierItem>): Promise<SupplierItem | undefined> {
+    const [updatedItem] = await db
+      .update(supplierItems)
+      .set({
+        ...itemData,
+        updatedAt: new Date()
+      })
+      .where(eq(supplierItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteSupplierItem(id: number): Promise<boolean> {
+    const result = await db.delete(supplierItems).where(eq(supplierItems.id, id));
     return result.rowCount > 0;
   }
 

@@ -114,6 +114,19 @@ export const purchaseOrders = pgTable("purchase_orders", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Supplier Items table
+export const supplierItems = pgTable("supplier_items", {
+  id: serial("id").primaryKey(),
+  supplierId: integer("supplier_id").references(() => suppliers.id, { onDelete: 'cascade' }).notNull(),
+  itemName: varchar("item_name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
+  unit: varchar("unit", { length: 50 }).notNull(), // e.g., each, meter, kg, etc.
+  vatType: varchar("vat_type", { length: 50 }).default("VAT 20%").notNull(), // VAT 20%, VAT 0%, 20% RC CIS (0%)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Types and Schemas
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -172,3 +185,13 @@ export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit
 });
 export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+
+// Supplier Items
+export const insertSupplierItemSchema = createInsertSchema(supplierItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSupplierItem = z.infer<typeof insertSupplierItemSchema>;
+export type SupplierItem = typeof supplierItems.$inferSelect;
