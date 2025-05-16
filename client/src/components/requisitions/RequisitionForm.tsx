@@ -58,6 +58,8 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [supplierItems, setSupplierItems] = useState<SupplierItem[]>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [currentInputValue, setCurrentInputValue] = useState<string>("");
+  const [open, setOpen] = useState<boolean>(false);
   const [itemToAdd, setItemToAdd] = useState<{
     index: number;
     description: string;
@@ -484,28 +486,47 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.description`}
                               render={({ field }) => (
-                                <Popover>
+                                <Popover 
+                                  open={open} 
+                                  onOpenChange={(isOpen) => {
+                                    setOpen(isOpen);
+                                    if (!isOpen) {
+                                      // Reset the input value when closing
+                                      setCurrentInputValue("");
+                                    }
+                                  }}
+                                >
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
                                       role="combobox"
+                                      aria-expanded={open}
                                       className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
+                                      onClick={() => setOpen(!open)}
                                     >
                                       {field.value || "Select or type item..."}
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent className="w-[300px] p-0">
                                     <Command>
-                                      <CommandInput placeholder="Search items or enter new item..." className="h-9" />
+                                      <CommandInput 
+                                        placeholder="Search items or enter new item..." 
+                                        className="h-9"
+                                        onValueChange={(value) => {
+                                          // Store the current input value to use in CommandEmpty
+                                          setCurrentInputValue(value);
+                                        }}
+                                      />
                                       <CommandEmpty>
                                         <CommandItem
-                                          value={field.value || ""}
-                                          onSelect={(value) => {
-                                            field.onChange(value);
+                                          value={currentInputValue}
+                                          onSelect={() => {
+                                            field.onChange(currentInputValue);
                                             // This is a custom item, so we don't auto-populate anything
+                                            setOpen(false);
                                           }}
                                         >
-                                          + Add new item: {field.value || ""}
+                                          + Add new item: {currentInputValue}
                                         </CommandItem>
                                       </CommandEmpty>
                                       <CommandGroup heading="From Supplier Catalog">
@@ -513,23 +534,21 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                           <CommandItem
                                             key={item.id}
                                             value={item.itemName}
-                                            onSelect={(value) => {
-                                              field.onChange(value);
+                                            onSelect={() => {
+                                              field.onChange(item.itemName);
                                               // Also set the unit price and unit if from catalog
-                                              const selectedItem = supplierItems.find(i => i.itemName === value);
-                                              if (selectedItem) {
-                                                // Update unit price for this item
-                                                form.setValue(`items.${index}.unitPrice`, selectedItem.unitPrice.toString(), {
-                                                  shouldValidate: true,
-                                                });
-                                                // Update unit for this item
-                                                form.setValue(`items.${index}.unit`, selectedItem.unit, {
-                                                  shouldValidate: true,
-                                                });
-                                                // Update VAT type
-                                                form.setValue(`items.${index}.vatType`, selectedItem.vatType || 'VAT 20%');
-                                                calculateTotals();
-                                              }
+                                              // Update unit price for this item
+                                              form.setValue(`items.${index}.unitPrice`, item.unitPrice.toString(), {
+                                                shouldValidate: true,
+                                              });
+                                              // Update unit for this item
+                                              form.setValue(`items.${index}.unit`, item.unit, {
+                                                shouldValidate: true,
+                                              });
+                                              // Update VAT type
+                                              form.setValue(`items.${index}.vatType`, item.vatType || 'VAT 20%');
+                                              calculateTotals();
+                                              setOpen(false);
                                             }}
                                           >
                                             {item.itemName}
