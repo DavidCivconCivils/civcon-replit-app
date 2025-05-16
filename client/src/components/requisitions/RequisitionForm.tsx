@@ -22,6 +22,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
+import { BasicDropdown } from "@/components/ui/basic-dropdown";
 
 // Combine the schemas for form validation
 const requisitionItemSchema = insertRequisitionItemSchema.extend({
@@ -632,64 +634,29 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.unit`}
                               render={({ field }) => (
-                                <Popover
-                                  open={activeUnitCombobox === index} 
-                                  onOpenChange={(open) => {
-                                    if (open) {
-                                      setActiveUnitCombobox(index);
-                                      setUnitSearchValue("");
-                                    } else {
-                                      setActiveUnitCombobox(null);
-                                    }
+                                <BasicDropdown
+                                  value={field.value}
+                                  onChange={(value) => {
+                                    field.onChange(value);
+                                    calculateTotals();
                                   }}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      aria-expanded={activeUnitCombobox === index}
-                                      className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
-                                    >
-                                      {field.value || "Select unit..."}
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-[200px] p-0">
-                                    <Command>
-                                      <CommandInput 
-                                        placeholder="Search units or type new..." 
-                                        className="h-9"
-                                        value={unitSearchValue}
-                                        onValueChange={setUnitSearchValue}
-                                      />
-                                      <CommandEmpty>
-                                        <CommandItem
-                                          onSelect={() => {
-                                            if (unitSearchValue.trim()) {
-                                              field.onChange(unitSearchValue);
-                                              setActiveUnitCombobox(null);
-                                            }
-                                          }}
-                                        >
-                                          + Add new unit: {unitSearchValue}
-                                        </CommandItem>
-                                      </CommandEmpty>
-                                      <CommandGroup>
-                                        {["Each", "Meters", "Kg", "Box", "Day", "Hour", "Liter", "Roll", "Pack", "Set", "Ton"].map((unit) => (
-                                          <CommandItem
-                                            key={unit}
-                                            value={unit}
-                                            onSelect={() => {
-                                              field.onChange(unit);
-                                              setActiveUnitCombobox(null);
-                                            }}
-                                          >
-                                            {unit}
-                                          </CommandItem>
-                                        ))}
-                                      </CommandGroup>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
+                                  options={[
+                                    { value: "Each", label: "Each" },
+                                    { value: "Meters", label: "Meters" },
+                                    { value: "Kg", label: "Kg" },
+                                    { value: "Box", label: "Box" },
+                                    { value: "Day", label: "Day" },
+                                    { value: "Hour", label: "Hour" },
+                                    { value: "Liter", label: "Liter" },
+                                    { value: "Roll", label: "Roll" },
+                                    { value: "Pack", label: "Pack" },
+                                    { value: "Set", label: "Set" },
+                                    { value: "Ton", label: "Ton" }
+                                  ]}
+                                  placeholder="Select unit..."
+                                  width="w-full"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0"
+                                />
                               )}
                             />
                           </td>

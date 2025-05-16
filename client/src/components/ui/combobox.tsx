@@ -48,52 +48,25 @@ export function Combobox({
   disabled = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [searchTerm, setSearchTerm] = React.useState("")
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [inputValue, setInputValue] = React.useState("")
   
-  const filteredOptions = React.useMemo(() => {
-    // Return all options if there's no search term
-    if (!searchTerm || !searchTerm.trim()) {
-      return options || [];
-    }
-    
-    // Normalize search term
-    const normalizedSearch = searchTerm.toLowerCase();
-    
-    // Filter options based on normalized search
-    return (options || []).filter(option => 
-      option.label.toLowerCase().includes(normalizedSearch)
-    );
-  }, [options, searchTerm])
+  const filteredOptions = options.filter((option) => {
+    if (!inputValue) return true
+    return option.label.toLowerCase().includes(inputValue.toLowerCase())
+  })
   
-  const selectedOption = options?.find((option) => option.value === value)
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      setSearchTerm("");
-    }
-  }
-
-  const handleSelect = (currentValue: string) => {
-    if (currentValue === "add-new" && onAddNew) {
-      onAddNew(searchTerm);
-    } else {
-      onChange(currentValue);
-    }
-    setOpen(false);
-  }
+  const selectedOption = options.find((option) => option.value === value)
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "justify-between",
-            "h-10 rounded-xl border border-neutral-200 bg-background px-4 py-2 text-base",
+            "justify-between h-10 rounded-xl px-4 py-2 text-base",
+            "border border-neutral-200 bg-background",
             "transition-all duration-200 ease-out",
             "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:ring-offset-1",
             width,
@@ -107,75 +80,70 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent
         className={cn(
-          "p-0",
-          "rounded-xl border border-neutral-100",
+          "p-0 rounded-xl border border-neutral-100",
           "shadow-[0_8px_30px_rgba(0,0,0,0.08),_0_0_10px_rgba(0,0,0,0.05)]",
           width
         )}
       >
         <Command>
           <CommandInput 
-            ref={inputRef}
             placeholder={placeholder} 
-            value={searchTerm}
-            onValueChange={setSearchTerm}
+            value={inputValue}
+            onValueChange={setInputValue}
             className="h-10 rounded-t-xl rounded-b-none border-b border-neutral-100"
           />
-          <CommandEmpty className="py-2 text-sm text-center text-neutral-500">
+          <CommandEmpty className="py-3 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && searchTerm && searchTerm.trim() && (
+            {showAddNew && inputValue.trim() && (
               <div 
-                className="flex items-center justify-center mt-1 p-1.5 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
+                className="flex items-center justify-center mt-2 p-2 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => {
-                  if (onAddNew) onAddNew(searchTerm.trim());
+                  if (onAddNew) {
+                    onAddNew(inputValue.trim());
+                  }
                   setOpen(false);
                 }}
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                <span className="text-primary">Add "{searchTerm.trim()}"</span>
+                <Plus className="mr-2 h-4 w-4 text-primary" />
+                <span className="text-primary font-medium">Add "{inputValue.trim()}"</span>
               </div>
             )}
           </CommandEmpty>
-          <CommandGroup
-            className="max-h-[200px] overflow-y-auto p-1"
-          >
+          <CommandGroup className="max-h-[200px] overflow-y-auto p-1">
             {filteredOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.value}
-                onSelect={handleSelect}
-                className={cn(
-                  "rounded-lg py-2 pl-8 pr-3 text-sm",
-                  "transition-colors duration-150 ease-out",
-                  "outline-none hover:bg-neutral-50 aria-selected:bg-primary/5",
-                  "data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                )}
+                onSelect={(currentValue) => {
+                  onChange(currentValue)
+                  setInputValue("")
+                  setOpen(false)
+                }}
+                className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 aria-selected:bg-primary/5"
               >
-                {option.label}
                 <Check
                   className={cn(
-                    "ml-auto h-4 w-4 text-primary",
-                    value === option.value ? "opacity-100" : "opacity-0"
+                    "mr-2 h-4 w-4",
+                    value === option.value ? "opacity-100 text-primary" : "opacity-0"
                   )}
                 />
+                {option.label}
               </CommandItem>
             ))}
-            {showAddNew && searchTerm && searchTerm.trim() && (
+            {showAddNew && inputValue.trim() && (
               <CommandItem
-                key="add-new"
                 value="add-new"
                 onSelect={() => {
-                  if (onAddNew) onAddNew(searchTerm.trim());
-                  setOpen(false);
+                  if (onAddNew) {
+                    onAddNew(inputValue.trim());
+                  }
+                  setInputValue("")
+                  setOpen(false)
                 }}
-                className={cn(
-                  "rounded-lg py-2 px-3 text-sm flex items-center justify-center",
-                  "transition-colors duration-150 ease-out",
-                  "outline-none hover:bg-neutral-50 text-primary"
-                )}
+                className="rounded-lg py-2 px-3 text-sm flex items-center justify-center text-primary"
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                <span>Add "{searchTerm.trim()}"</span>
+                <Plus className="mr-2 h-4 w-4" />
+                <span>Add "{inputValue.trim()}"</span>
               </CommandItem>
             )}
           </CommandGroup>
