@@ -58,8 +58,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [supplierItems, setSupplierItems] = useState<SupplierItem[]>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
-  const [currentInputValue, setCurrentInputValue] = useState<string>("");
-  const [open, setOpen] = useState<boolean>(false);
+  const [comboboxStates, setComboboxStates] = useState<{[key: number]: { open: boolean, inputValue: string }}>({});
   const [itemToAdd, setItemToAdd] = useState<{
     index: number;
     description: string;
@@ -487,22 +486,34 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               name={`items.${index}.description`}
                               render={({ field }) => (
                                 <Popover 
-                                  open={open} 
+                                  open={comboboxStates[index]?.open || false} 
                                   onOpenChange={(isOpen) => {
-                                    setOpen(isOpen);
-                                    if (!isOpen) {
-                                      // Reset the input value when closing
-                                      setCurrentInputValue("");
-                                    }
+                                    // Update the open state for this specific item row
+                                    setComboboxStates(prev => ({
+                                      ...prev,
+                                      [index]: {
+                                        open: isOpen,
+                                        inputValue: isOpen ? prev[index]?.inputValue || "" : "" 
+                                      }
+                                    }));
                                   }}
                                 >
                                   <PopoverTrigger asChild>
                                     <Button
                                       variant="outline"
                                       role="combobox"
-                                      aria-expanded={open}
+                                      aria-expanded={comboboxStates[index]?.open || false}
                                       className="w-full justify-between border-0 p-0 focus:ring-0 text-sm text-neutral-text"
-                                      onClick={() => setOpen(!open)}
+                                      onClick={() => {
+                                        // Toggle open state for this specific combobox
+                                        setComboboxStates(prev => ({
+                                          ...prev,
+                                          [index]: {
+                                            open: !(prev[index]?.open || false),
+                                            inputValue: prev[index]?.inputValue || ""
+                                          }
+                                        }));
+                                      }}
                                     >
                                       {field.value || "Select or type item..."}
                                     </Button>
@@ -513,20 +524,37 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                         placeholder="Search items or enter new item..." 
                                         className="h-9"
                                         onValueChange={(value) => {
-                                          // Store the current input value to use in CommandEmpty
-                                          setCurrentInputValue(value);
+                                          // Store the current input value for this specific item
+                                          setComboboxStates(prev => ({
+                                            ...prev,
+                                            [index]: {
+                                              ...prev[index] || {},
+                                              inputValue: value
+                                            }
+                                          }));
                                         }}
                                       />
                                       <CommandEmpty>
                                         <CommandItem
-                                          value={currentInputValue}
+                                          value={comboboxStates[index]?.inputValue || ""}
                                           onSelect={() => {
-                                            field.onChange(currentInputValue);
-                                            // This is a custom item, so we don't auto-populate anything
-                                            setOpen(false);
+                                            const customValue = comboboxStates[index]?.inputValue || "";
+                                            if (customValue.trim()) {
+                                              field.onChange(customValue);
+                                              // This is a custom item, so we don't auto-populate anything
+                                              
+                                              // Close this specific combobox
+                                              setComboboxStates(prev => ({
+                                                ...prev,
+                                                [index]: {
+                                                  ...prev[index] || {},
+                                                  open: false
+                                                }
+                                              }));
+                                            }
                                           }}
                                         >
-                                          + Add new item: {currentInputValue}
+                                          + Add new item: {comboboxStates[index]?.inputValue || ""}
                                         </CommandItem>
                                       </CommandEmpty>
                                       <CommandGroup heading="From Supplier Catalog">
@@ -536,19 +564,31 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                             value={item.itemName}
                                             onSelect={() => {
                                               field.onChange(item.itemName);
-                                              // Also set the unit price and unit if from catalog
+                                              
                                               // Update unit price for this item
                                               form.setValue(`items.${index}.unitPrice`, item.unitPrice.toString(), {
                                                 shouldValidate: true,
                                               });
+                                              
                                               // Update unit for this item
                                               form.setValue(`items.${index}.unit`, item.unit, {
                                                 shouldValidate: true,
                                               });
+                                              
                                               // Update VAT type
                                               form.setValue(`items.${index}.vatType`, item.vatType || 'VAT 20%');
+                                              
+                                              // Calculate totals after updating values
                                               calculateTotals();
-                                              setOpen(false);
+                                              
+                                              // Close this specific combobox
+                                              setComboboxStates(prev => ({
+                                                ...prev,
+                                                [index]: {
+                                                  ...prev[index] || {},
+                                                  open: false
+                                                }
+                                              }));
                                             }}
                                           >
                                             {item.itemName}
