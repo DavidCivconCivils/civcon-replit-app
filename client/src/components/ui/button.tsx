@@ -4,6 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Button Variants:
+ * - default: Primary blue, rounded - used for main actions
+ * - destructive: Strong red, rounded - used for delete/remove actions
+ * - outline: White with border, rounded - used for secondary actions
+ * - secondary: Light gray, rounded - used for less important actions
+ * - ghost: No background/border - used for minimal visual impact
+ * - link: Appears as text link - used within text or minimal interfaces
+ * - ios: iOS-inspired style with subtle shadow - used for modern UI
+ * - success: Green confirmation - used for successful/complete actions
+ * - warn: Amber warning - used for caution/warning actions
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow-sm",
   {
@@ -13,10 +25,10 @@ const buttonVariants = cva(
         destructive:
           "bg-red-600 text-white hover:bg-red-700 rounded-full font-medium",
         outline:
-          "border border-input bg-background hover:bg-accent/10 hover:text-accent-foreground rounded-full",
+          "border border-neutral-200 bg-background hover:bg-neutral-50 text-neutral-800 rounded-full",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-xl font-medium",
-        ghost: "hover:bg-accent/10 hover:text-accent-foreground rounded-xl shadow-none",
+          "bg-neutral-100 text-neutral-900 hover:bg-neutral-200 rounded-xl font-medium",
+        ghost: "hover:bg-neutral-100 hover:text-neutral-900 rounded-xl shadow-none",
         link: "text-primary underline-offset-4 hover:underline shadow-none",
         ios: "bg-white border border-neutral-100 text-neutral-900 hover:bg-neutral-50 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04),_0_1px_2px_rgba(0,0,0,0.06)]",
         success: "bg-green-600 text-white hover:bg-green-700 rounded-full font-medium",
