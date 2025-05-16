@@ -306,6 +306,20 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
   const handleAddItemToSupplier = () => {
     if (!itemToAdd || !watchedSupplierId) return;
     
+    // Check if an item with the same description already exists
+    const existingItem = supplierItems.find(item => 
+      item.itemName.toLowerCase() === itemToAdd.description.toLowerCase()
+    );
+    
+    if (existingItem) {
+      toast({
+        title: "Item Already Exists",
+        description: "An item with the same name already exists in this supplier's catalog.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     addItemMutation.mutate({
       supplierId: watchedSupplierId,
       description: itemToAdd.description,
@@ -941,7 +955,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <FormLabel>Item Description</FormLabel>
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Item Description
+              </label>
               <Input 
                 value={itemToAdd?.description || ''} 
                 onChange={(e) => setItemToAdd(prev => prev ? {
@@ -952,7 +968,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <FormLabel>Unit</FormLabel>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Unit
+                </label>
                 <Input 
                   value={itemToAdd?.unit || ''} 
                   onChange={(e) => setItemToAdd(prev => prev ? {
@@ -962,7 +980,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <FormLabel>Unit Price</FormLabel>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Unit Price
+                </label>
                 <Input 
                   type="number"
                   step="0.01"
