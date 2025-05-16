@@ -322,9 +322,11 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
     
     addItemMutation.mutate({
       supplierId: watchedSupplierId,
+      itemName: itemToAdd.description,
       description: itemToAdd.description,
       unit: itemToAdd.unit,
       unitPrice: itemToAdd.unitPrice,
+      vatType: 'VAT 20%'
     });
   };
 
