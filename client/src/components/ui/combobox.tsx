@@ -50,16 +50,26 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   
-  // Ensure options is always an array
-  const safeOptions = Array.isArray(options) ? options : []
+  // Ensure options is always an array and filter out any null/undefined entries
+  const safeOptions = Array.isArray(options) 
+    ? options.filter(option => option !== null && option !== undefined)
+    : []
   
+  // Safe filtering function that checks for null values
   const filteredOptions = safeOptions.filter((option) => {
     if (!inputValue) return true
     if (!option || !option.label) return false
-    return option.label.toString().toLowerCase().includes(inputValue.toLowerCase())
+    
+    const optionLabel = String(option.label || "").toLowerCase();
+    const searchTerm = String(inputValue || "").toLowerCase();
+    
+    return optionLabel.includes(searchTerm);
   })
   
-  const selectedOption = safeOptions.find((option) => option && option.value === value)
+  // Safe find operation with null/undefined checks
+  const selectedOption = safeOptions.find((option) => 
+    option && option.value && value && option.value === value
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -98,18 +108,20 @@ export function Combobox({
           />
           <CommandEmpty className="py-3 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && inputValue && inputValue.trim && inputValue.trim() && (
+            {showAddNew && inputValue && typeof inputValue.trim === 'function' && inputValue.trim() && (
               <div 
                 className="flex items-center justify-center mt-2 p-2 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => {
-                  if (onAddNew) {
+                  if (onAddNew && typeof inputValue.trim === 'function') {
                     onAddNew(inputValue.trim());
                   }
                   setOpen(false);
                 }}
               >
                 <Plus className="mr-2 h-4 w-4 text-primary" />
-                <span className="text-primary font-medium">Add "{inputValue.trim()}"</span>
+                <span className="text-primary font-medium">
+                  Add "{typeof inputValue.trim === 'function' ? inputValue.trim() : inputValue}"
+                </span>
               </div>
             )}
           </CommandEmpty>
@@ -118,10 +130,12 @@ export function Combobox({
               if (!option) return null;
               return (
                 <CommandItem
-                  key={option.value || "option-" + Math.random()}
-                  value={option.value || ""}
+                  key={option.value ? option.value : `option-${Math.random()}`}
+                  value={option.value ? option.value : ""}
                   onSelect={() => {
-                    onChange(option.value || "")
+                    if (option.value) {
+                      onChange(option.value)
+                    }
                     setInputValue("")
                     setOpen(false)
                   }}
@@ -130,18 +144,20 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100 text-primary" : "opacity-0"
+                      value && option.value && value === option.value 
+                        ? "opacity-100 text-primary" 
+                        : "opacity-0"
                     )}
                   />
                   <span>{option.label || ""}</span>
                 </CommandItem>
               );
             })}
-            {showAddNew && inputValue && inputValue.trim && inputValue.trim() && (
+            {showAddNew && inputValue && typeof inputValue.trim === 'function' && inputValue.trim() && (
               <CommandItem
                 value="add-new"
                 onSelect={() => {
-                  if (onAddNew) {
+                  if (onAddNew && typeof inputValue.trim === 'function') {
                     onAddNew(inputValue.trim());
                   }
                   setInputValue("")
