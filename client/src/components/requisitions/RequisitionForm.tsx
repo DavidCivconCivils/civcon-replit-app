@@ -491,57 +491,64 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               control={form.control}
                               name={`items.${index}.description`}
                               render={({ field }) => (
-                                <Combobox
-                                  value={field.value}
-                                  onChange={(value) => {
-                                    // Only process if value is not "add-new"
-                                    if (value !== "add-new") {
-                                      field.onChange(value);
+                                <Select 
+                                  onValueChange={(value) => {
+                                    // Handle add new item option
+                                    if (value === "add-new") {
+                                      const customValue = field.value || "";
+                                      // Show dialog to add this item to supplier catalog
+                                      setItemToAdd({
+                                        index,
+                                        description: customValue,
+                                        unit: form.getValues(`items.${index}.unit`) || "Each",
+                                        unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
+                                      });
+                                      setShowAddItemDialog(true);
+                                      return;
+                                    }
+                                    
+                                    // Set the field value
+                                    field.onChange(value);
+                                    
+                                    // Find matching item in catalog
+                                    const matchingItem = supplierItems.find(item => 
+                                      item.itemName === value
+                                    );
+                                    
+                                    if (matchingItem) {
+                                      // Update unit price for this item
+                                      form.setValue(`items.${index}.unitPrice`, matchingItem.unitPrice.toString(), {
+                                        shouldValidate: true,
+                                      });
                                       
-                                      // Find matching item in catalog
-                                      const matchingItem = supplierItems.find(item => 
-                                        item.itemName === value
-                                      );
+                                      // Update unit for this item
+                                      form.setValue(`items.${index}.unit`, matchingItem.unit, {
+                                        shouldValidate: true,
+                                      });
                                       
-                                      if (matchingItem) {
-                                        // Update unit price for this item
-                                        form.setValue(`items.${index}.unitPrice`, matchingItem.unitPrice.toString(), {
-                                          shouldValidate: true,
-                                        });
-                                        
-                                        // Update unit for this item
-                                        form.setValue(`items.${index}.unit`, matchingItem.unit, {
-                                          shouldValidate: true,
-                                        });
-                                        
-                                        // Update VAT type
-                                        form.setValue(`items.${index}.vatType`, matchingItem.vatType || 'VAT 20%');
-                                        
-                                        // Calculate totals after updating values
-                                        calculateTotals();
-                                      }
+                                      // Update VAT type
+                                      form.setValue(`items.${index}.vatType`, matchingItem.vatType || 'VAT 20%');
+                                      
+                                      // Calculate totals after updating values
+                                      calculateTotals();
                                     }
                                   }}
-                                  options={supplierItems.map(item => ({
-                                    value: item.itemName,
-                                    label: item.itemName
-                                  }))}
-                                  placeholder="Select or type item..."
-                                  emptyText="No matching items found"
-                                  showAddNew={true}
-                                  onAddNew={(value) => {
-                                    // Show dialog to add this item to supplier catalog
-                                    setItemToAdd({
-                                      index,
-                                      description: value,
-                                      unit: form.getValues(`items.${index}.unit`) || "Each",
-                                      unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
-                                    });
-                                    setShowAddItemDialog(true);
-                                  }}
-                                  width="w-full"
-                                  className="border-0 focus:ring-0 text-sm text-neutral-text p-0 h-auto min-h-0"
-                                />
+                                  value={field.value || ""}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="border-0 focus:ring-0 text-sm text-neutral-text p-0 h-auto min-h-0">
+                                      <SelectValue placeholder="Select or type item..." />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {supplierItems.map((item) => (
+                                      <SelectItem key={item.id} value={item.itemName}>
+                                        {item.itemName}
+                                      </SelectItem>
+                                    ))}
+                                    <SelectItem value="add-new">➕ Add new item to catalog</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               )}
                             />
                           </td>
