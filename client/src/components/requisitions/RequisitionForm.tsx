@@ -561,7 +561,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
                             <FormField
                               control={form.control}
                               name={`items.${index}.unit`}
@@ -587,12 +587,12 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   ]}
                                   placeholder="Select unit..."
                                   width="w-full"
-                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0 text-center"
                                 />
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
                             <FormField
                               control={form.control}
                               name={`items.${index}.unitPrice`}
@@ -602,7 +602,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   type="number"
                                   step="0.01"
                                   min="0" 
-                                  className="block w-24 border-0 p-0 focus:ring-0 text-sm text-neutral-text" 
+                                  className="block w-24 border-0 p-0 focus:ring-0 text-sm text-neutral-text text-center mx-auto" 
                                   placeholder="0.00"
                                   onChange={(e) => {
                                     field.onChange(e);
@@ -612,7 +612,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap">
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
                             <FormField
                               control={form.control}
                               name={`items.${index}.vatType`}
@@ -630,62 +630,35 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                   ]}
                                   placeholder="VAT Type"
                                   width="w-32"
-                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0"
+                                  className="border-0 focus:ring-0 text-sm text-neutral-text px-0 py-0 h-auto min-h-0 text-center"
                                 />
                               )}
                             />
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text text-center">
                             {formatCurrency(parseFloat(watchedItems[index]?.totalPrice || "0"))}
                           </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                type="button"
-                                className="h-8 w-8 p-0"
-                                onClick={() => {
-                                  if (watchedSupplierId && form.getValues(`items.${index}.description`)) {
-                                    setItemToAdd({
-                                      index,
-                                      description: form.getValues(`items.${index}.description`),
-                                      unit: form.getValues(`items.${index}.unit`),
-                                      unitPrice: form.getValues(`items.${index}.unitPrice`),
-                                    });
-                                    setShowAddItemDialog(true);
-                                  } else {
-                                    toast({
-                                      title: "Cannot Add Item",
-                                      description: "Please select a supplier and enter item details first.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                              >
-                                <PlusCircle className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                type="button"
-                                className="h-8 w-8 p-0"
-                                onClick={() => {
-                                  if (fields.length > 1) {
-                                    remove(index);
-                                    calculateTotals();
-                                  } else {
-                                    toast({
-                                      title: "Cannot Remove",
-                                      description: "At least one item is required.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                          <td className="px-4 py-2 whitespace-nowrap text-center">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              type="button"
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                if (fields.length > 1) {
+                                  remove(index);
+                                  calculateTotals();
+                                } else {
+                                  toast({
+                                    title: "Cannot Remove",
+                                    description: "At least one item is required.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
                           </td>
                         </tr>
                       ))}
