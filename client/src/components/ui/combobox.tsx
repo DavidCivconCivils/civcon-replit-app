@@ -51,9 +51,12 @@ export function Combobox({
   const [searchTerm, setSearchTerm] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
   
-  const filteredOptions = options?.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  const filteredOptions = options?.filter((option) => {
+    // Normalize both strings for consistent comparison
+    const normalizedOption = option.label.toLowerCase().trim();
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+    return normalizedOption.includes(normalizedSearch);
+  }) || []
   
   const selectedOption = options?.find((option) => option.value === value)
 
@@ -112,13 +115,13 @@ export function Combobox({
           />
           <CommandEmpty className="py-2 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && searchTerm && (
+            {showAddNew && searchTerm.trim() && (
               <div 
                 className="flex items-center justify-center mt-1 p-1.5 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => handleSelect("add-new")}
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                <span className="text-primary">Add "{searchTerm}"</span>
+                <span className="text-primary">Add "{searchTerm.trim()}"</span>
               </div>
             )}
           </CommandEmpty>
@@ -146,7 +149,7 @@ export function Combobox({
                 />
               </CommandItem>
             ))}
-            {showAddNew && searchTerm && filteredOptions.length > 0 && (
+            {showAddNew && searchTerm.trim() && filteredOptions.length > 0 && (
               <CommandItem
                 key="add-new"
                 value="add-new"
@@ -158,7 +161,7 @@ export function Combobox({
                 )}
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
-                <span>Add "{searchTerm}"</span>
+                <span>Add "{searchTerm.trim()}"</span>
               </CommandItem>
             )}
           </CommandGroup>
