@@ -51,15 +51,20 @@ export function Combobox({
   const [searchTerm, setSearchTerm] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
   
-  const filteredOptions = options?.filter((option) => {
-    // Only filter if there's a search term
-    if (!searchTerm.trim()) return true;
+  const filteredOptions = React.useMemo(() => {
+    // Return all options if there's no search term
+    if (!searchTerm || !searchTerm.trim()) {
+      return options || [];
+    }
     
-    // Normalize both strings for consistent comparison
-    const normalizedOption = option.label.toLowerCase().trim();
-    const normalizedSearch = searchTerm.toLowerCase().trim();
-    return normalizedOption.includes(normalizedSearch);
-  }) || []
+    // Normalize search term
+    const normalizedSearch = searchTerm.toLowerCase();
+    
+    // Filter options based on normalized search
+    return (options || []).filter(option => 
+      option.label.toLowerCase().includes(normalizedSearch)
+    );
+  }, [options, searchTerm])
   
   const selectedOption = options?.find((option) => option.value === value)
 
@@ -118,10 +123,13 @@ export function Combobox({
           />
           <CommandEmpty className="py-2 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && searchTerm.trim() && (
+            {showAddNew && searchTerm && searchTerm.trim() && (
               <div 
                 className="flex items-center justify-center mt-1 p-1.5 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
-                onClick={() => handleSelect("add-new")}
+                onClick={() => {
+                  if (onAddNew) onAddNew(searchTerm.trim());
+                  setOpen(false);
+                }}
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
                 <span className="text-primary">Add "{searchTerm.trim()}"</span>
@@ -152,11 +160,14 @@ export function Combobox({
                 />
               </CommandItem>
             ))}
-            {showAddNew && searchTerm.trim() && (
+            {showAddNew && searchTerm && searchTerm.trim() && (
               <CommandItem
                 key="add-new"
                 value="add-new"
-                onSelect={handleSelect}
+                onSelect={() => {
+                  if (onAddNew) onAddNew(searchTerm.trim());
+                  setOpen(false);
+                }}
                 className={cn(
                   "rounded-lg py-2 px-3 text-sm flex items-center justify-center",
                   "transition-colors duration-150 ease-out",
