@@ -52,10 +52,11 @@ export function Combobox({
   
   const filteredOptions = options.filter((option) => {
     if (!inputValue) return true
-    return option.label.toLowerCase().includes(inputValue.toLowerCase())
+    if (!option || !option.label) return false
+    return option.label.toString().toLowerCase().includes(inputValue.toLowerCase())
   })
   
-  const selectedOption = options.find((option) => option.value === value)
+  const selectedOption = options.find((option) => option && option.value === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -94,7 +95,7 @@ export function Combobox({
           />
           <CommandEmpty className="py-3 text-sm text-center text-neutral-500">
             {emptyText}
-            {showAddNew && inputValue.trim() && (
+            {showAddNew && inputValue && inputValue.trim && inputValue.trim() && (
               <div 
                 className="flex items-center justify-center mt-2 p-2 rounded-lg hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => {
@@ -110,14 +111,16 @@ export function Combobox({
             )}
           </CommandEmpty>
           <CommandGroup className="max-h-[200px] overflow-y-auto p-1">
-            {filteredOptions.map((option) => (
+            {filteredOptions.map((option) => option && (
               <CommandItem
-                key={option.value}
-                value={option.value}
+                key={option.value || ""}
+                value={option.value || ""}
                 onSelect={() => {
-                  onChange(option.value)
-                  setInputValue("")
-                  setOpen(false)
+                  if (option && option.value) {
+                    onChange(option.value)
+                    setInputValue("")
+                    setOpen(false)
+                  }
                 }}
                 className="rounded-lg py-2 px-3 text-sm hover:bg-neutral-50 aria-selected:bg-primary/5 cursor-pointer"
               >
@@ -127,7 +130,7 @@ export function Combobox({
                     value === option.value ? "opacity-100 text-primary" : "opacity-0"
                   )}
                 />
-                {option.label}
+                {option.label || ""}
               </CommandItem>
             ))}
             {showAddNew && inputValue.trim() && (
