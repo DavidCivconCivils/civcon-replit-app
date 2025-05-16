@@ -522,7 +522,19 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                         <CommandItem
                                           onSelect={() => {
                                             if (searchValue.trim()) {
+                                              // Set the form field value
                                               field.onChange(searchValue);
+                                              
+                                              // Show dialog to add this item to supplier catalog
+                                              setItemToAdd({
+                                                index,
+                                                description: searchValue,
+                                                unit: form.getValues(`items.${index}.unit`) || "",
+                                                unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
+                                              });
+                                              setShowAddItemDialog(true);
+                                              
+                                              // Close the combobox
                                               setActiveItemCombobox(null);
                                             }
                                           }}

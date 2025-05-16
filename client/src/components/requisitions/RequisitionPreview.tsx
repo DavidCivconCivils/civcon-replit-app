@@ -5,7 +5,7 @@ import { Printer, FileDown, Mail } from "lucide-react";
 import { User } from "@shared/schema";
 
 interface RequisitionPreviewProps {
-  data: {
+  requisition: {
     requisitionNumber?: string;
     project?: {
       id: number;
@@ -45,8 +45,8 @@ interface RequisitionPreviewProps {
   onEmail?: () => void;
 }
 
-export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail }: RequisitionPreviewProps) {
-  console.log("RequisitionPreview data:", data);
+export default function RequisitionPreview({ requisition, onExportPdf, onPrint, onEmail }: RequisitionPreviewProps) {
+  console.log("RequisitionPreview data:", requisition);
   
   return (
     <div className="print-container">
@@ -54,8 +54,8 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
       <div className="flex justify-between items-start mb-6">
         <div>
           <h2 className="text-xl font-bold text-neutral-text">Purchase Requisition</h2>
-          {data.requisitionNumber && (
-            <p className="text-sm text-neutral-textLight font-mono">{data.requisitionNumber}</p>
+          {requisition.requisitionNumber && (
+            <p className="text-sm text-neutral-textLight font-mono">{requisition.requisitionNumber}</p>
           )}
         </div>
         <div className="h-16 w-48 flex items-center justify-center">
@@ -68,36 +68,36 @@ export default function RequisitionPreview({ data, onExportPdf, onPrint, onEmail
         <div>
           <p className="text-sm text-neutral-textLight">Project:</p>
           <p className="font-medium">
-            {data.project 
-              ? `${data.project.name} (${data.project.contractNumber})` 
+            {requisition.project 
+              ? `${requisition.project.name} (${requisition.project.contractNumber})` 
               : "No project specified"}
           </p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Date:</p>
-          <p className="font-medium">{formatDate(data.requestDate)}</p>
+          <p className="font-medium">{formatDate(requisition.requestDate)}</p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Status:</p>
           <p className="font-medium">
-            {data.status === "pending" ? "Sent for Approval" : 
-             data.status === "rejected" ? "Rejected" : 
-             data.status || "Draft"}
+            {requisition.status === "pending" ? "Sent for Approval" : 
+             requisition.status === "rejected" ? "Rejected" : 
+             requisition.status || "Draft"}
           </p>
         </div>
         <div>
           <p className="text-sm text-neutral-textLight">Required By:</p>
-          <p className="font-medium">{formatDate(data.deliveryDate)}</p>
+          <p className="font-medium">{formatDate(requisition.deliveryDate)}</p>
         </div>
       </div>
       
       {/* Supplier Info */}
       <div className="bg-neutral p-4 rounded-md mb-6">
         <h4 className="font-medium mb-2">Supplier Information</h4>
-        {data.supplier ? (
+        {requisition.supplier ? (
           <>
-            <p className="font-medium">{data.supplier.name}</p>
-            {data.supplier.address && <p className="text-sm">{data.supplier.address}</p>}
+            <p className="font-medium">{requisition.supplier.name}</p>
+            {requisition.supplier.address && <p className="text-sm">{requisition.supplier.address}</p>}
             {data.supplier.email && <p className="text-sm text-primary">{data.supplier.email}</p>}
           </>
         ) : (
