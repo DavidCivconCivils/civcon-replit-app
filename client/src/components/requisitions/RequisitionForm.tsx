@@ -519,9 +519,9 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                         onValueChange={setSearchValue}
                                       />
                                       <CommandEmpty>
-                                        <CommandItem
-                                          onSelect={() => {
-                                            if (searchValue.trim()) {
+                                        {searchValue && (
+                                          <CommandItem
+                                            onSelect={() => {
                                               // Set the form field value
                                               field.onChange(searchValue);
                                               
@@ -529,18 +529,19 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                               setItemToAdd({
                                                 index,
                                                 description: searchValue,
-                                                unit: form.getValues(`items.${index}.unit`) || "",
+                                                unit: form.getValues(`items.${index}.unit`) || "Each",
                                                 unitPrice: form.getValues(`items.${index}.unitPrice`) || "0"
                                               });
                                               setShowAddItemDialog(true);
                                               
                                               // Close the combobox
                                               setActiveItemCombobox(null);
-                                            }
-                                          }}
-                                        >
-                                          + Add new item: {searchValue}
-                                        </CommandItem>
+                                            }}
+                                            className="whitespace-normal break-words"
+                                          >
+                                            + Add new item: {searchValue}
+                                          </CommandItem>
+                                        )}
                                       </CommandEmpty>
                                       <CommandGroup heading="From Supplier Catalog">
                                         {supplierItems.map((item) => (
@@ -575,7 +576,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                         ))}
                                         
                                         {/* Always show Add Item option when text is entered */}
-                                        {searchValue.trim() && !supplierItems.some(item => 
+                                        {searchValue && !supplierItems.some(item => 
                                           item.itemName.toLowerCase() === searchValue.toLowerCase()
                                         ) && (
                                           <CommandItem
@@ -595,6 +596,7 @@ export default function RequisitionForm({ onSuccess }: RequisitionFormProps) {
                                               // Close the combobox
                                               setActiveItemCombobox(null);
                                             }}
+                                            className="whitespace-normal break-words"
                                           >
                                             Add item: {searchValue}
                                           </CommandItem>
