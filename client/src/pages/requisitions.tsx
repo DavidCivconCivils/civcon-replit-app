@@ -360,14 +360,23 @@ export default function Requisitions() {
                                   </Button>
                                 )}
                                 {req.status === "pending" && (user?.role === "finance" || user?.role === "admin") && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 text-success hover:text-success/80"
-                                    onClick={() => handleApproveRequisition(req.id)}
-                                  >
-                                    <CheckCircle size={16} />
-                                  </Button>
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 text-success hover:text-success/80"
+                                      onClick={() => handleApproveRequisition(req.id)}
+                                    >
+                                      <CheckCircle size={16} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="h-8 text-primary hover:text-primary-dark text-xs"
+                                      onClick={() => handlePreviewRequisition(req.id)}
+                                    >
+                                      View
+                                    </Button>
+                                  </>
                                 )}
                               </div>
                             </TableCell>
