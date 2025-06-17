@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Project } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import { Project, Requisition } from "@shared/schema";
 import { formatDate, getStatusColor } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Eye, Edit, FileText } from "lucide-react";
@@ -11,6 +12,16 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project, onEdit }: ProjectCardProps) {
   const { bg, text } = getStatusColor(project.status);
+
+  // Fetch requisitions to calculate outstanding count for this project
+  const { data: requisitions } = useQuery<Requisition[]>({
+    queryKey: ['/api/requisitions'],
+  });
+
+  // Calculate outstanding (pending) requisitions for this project
+  const outstandingCount = requisitions?.filter(req => 
+    req.projectId === project.id && req.status === "pending"
+  ).length || 0;
 
   return (
     <Card className="overflow-hidden flex flex-col">
@@ -48,6 +59,11 @@ export default function ProjectCard({ project, onEdit }: ProjectCardProps) {
           <a className="text-primary text-sm hover:underline flex items-center">
             <FileText size={16} className="mr-1" />
             Requisitions
+            {outstandingCount > 0 && (
+              <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                {outstandingCount}
+              </span>
+            )}
           </a>
         </Link>
       </CardFooter>

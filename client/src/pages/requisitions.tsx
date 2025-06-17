@@ -28,6 +28,7 @@ export default function Requisitions() {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [requisitionToCancel, setRequisitionToCancel] = useState<Requisition | null>(null);
   const [requisitionToApprove, setRequisitionToApprove] = useState<number | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -52,7 +53,9 @@ export default function Requisitions() {
     
     // Check if a project filter is specified
     if (searchParams.has('projectId')) {
-      // Could set additional filter here
+      setProjectFilter(searchParams.get('projectId'));
+    } else {
+      setProjectFilter(null);
     }
   }, [location, setLocation]);
 
@@ -114,6 +117,11 @@ export default function Requisitions() {
 
   // Filter and sort requisitions
   const filteredRequisitions = requisitions?.filter(req => {
+    // Filter by project if specified
+    if (projectFilter && req.projectId !== parseInt(projectFilter)) {
+      return false;
+    }
+    
     // Filter by status tab
     if (activeTab !== "all") {
       // Special handling for each tab to ensure correct filtering
@@ -233,10 +241,25 @@ export default function Requisitions() {
     setRequisitionToApprove(null);
   };
 
+  // Get the filtered project details if filtering by project
+  const filteredProject = projectFilter ? projects.find(p => p.id === parseInt(projectFilter)) : null;
+  
+  // Count outstanding (pending) requisitions for the current filter
+  const outstandingCount = filteredRequisitions?.filter(req => req.status === "pending").length || 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-text">Purchase Requisitions</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-text">
+            {filteredProject ? `${filteredProject.name} - Requisitions` : 'Purchase Requisitions'}
+          </h1>
+          {filteredProject && (
+            <p className="text-sm text-neutral-textLight mt-1">
+              {outstandingCount} outstanding requisition{outstandingCount !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
         <Button className="flex items-center" onClick={handleShowForm}>
           <Plus className="mr-2 h-4 w-4" />
           New Requisition
