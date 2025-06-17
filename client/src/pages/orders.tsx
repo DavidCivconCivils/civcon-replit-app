@@ -39,12 +39,12 @@ export default function Orders() {
     queryKey: ['/api/requisitions'],
   });
 
-  // Get pending requisitions - these are the ones with status 'pending'
-  const pendingRequisitions = requisitions.filter(req => req.status === 'pending');
+  // Get pending requisitions - these are the ones with status 'pending' (case insensitive)
+  const pendingRequisitions = requisitions.filter(req => req.status.toLowerCase() === 'pending');
   
   // Get requisitions created by the current user
   const userCreatedRequisitions = user ? requisitions.filter(req => 
-    req.requestedById === user.id && req.status === 'pending'
+    req.requestedById === user.id && req.status.toLowerCase() === 'pending'
   ) : [];
 
   // Fetch order details for preview

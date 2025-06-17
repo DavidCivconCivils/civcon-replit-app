@@ -124,12 +124,12 @@ export default function Requisitions() {
     
     // Filter by status tab
     if (activeTab !== "all") {
-      // Special handling for each tab to ensure correct filtering
-      if (activeTab === "pending" && req.status !== "pending") {
+      // Special handling for each tab to ensure correct filtering (case insensitive)
+      if (activeTab === "pending" && req.status.toLowerCase() !== "pending") {
         return false;
-      } else if (activeTab === "approved" && req.status !== "approved") {
+      } else if (activeTab === "approved" && req.status.toLowerCase() !== "approved") {
         return false;
-      } else if (activeTab === "rejected" && req.status !== "rejected") {
+      } else if (activeTab === "rejected" && req.status.toLowerCase() !== "rejected") {
         return false;
       }
     }
