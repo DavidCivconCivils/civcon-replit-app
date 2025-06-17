@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { Plus, Search, Eye, Edit, Printer, FileText, Mail, XCircle, CheckCircle } from "lucide-react";
+import { Plus, Search, Eye, Edit, Printer, FileText, Mail, XCircle, CheckCircle, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -250,15 +250,28 @@ export default function Requisitions() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-text">
-            {filteredProject ? `${filteredProject.name} - Requisitions` : 'Purchase Requisitions'}
-          </h1>
+        <div className="flex items-center gap-4">
           {filteredProject && (
-            <p className="text-sm text-neutral-textLight mt-1">
-              {outstandingCount} outstanding requisition{outstandingCount !== 1 ? 's' : ''}
-            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation('/requisitions')}
+              className="flex items-center text-neutral-textLight hover:text-neutral-text"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              All Requisitions
+            </Button>
           )}
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-text">
+              {filteredProject ? `${filteredProject.name} - Requisitions` : 'Purchase Requisitions'}
+            </h1>
+            {filteredProject && (
+              <p className="text-sm text-neutral-textLight mt-1">
+                {outstandingCount} outstanding requisition{outstandingCount !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
         </div>
         <Button className="flex items-center" onClick={handleShowForm}>
           <Plus className="mr-2 h-4 w-4" />
