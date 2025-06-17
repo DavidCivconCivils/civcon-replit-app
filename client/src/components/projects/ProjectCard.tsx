@@ -55,7 +55,7 @@ export default function ProjectCard({ project, onEdit }: ProjectCardProps) {
           <Edit size={16} className="mr-1" />
           Edit
         </button>
-        <Link href={`/requisitions?projectId=${project.id}`}>
+        <Link href={`/requisitions?projectId=${project.id}&status=pending`}>
           <a className="text-primary text-sm hover:underline flex items-center">
             <FileText size={16} className="mr-1" />
             Requisitions
