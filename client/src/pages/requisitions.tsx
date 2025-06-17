@@ -245,7 +245,7 @@ export default function Requisitions() {
   const filteredProject = projectFilter ? projects.find(p => p.id === parseInt(projectFilter)) : null;
   
   // Count outstanding (pending) requisitions for the current filter
-  const outstandingCount = filteredRequisitions?.filter(req => req.status === "pending").length || 0;
+  const outstandingCount = filteredRequisitions?.filter(req => req.status.toLowerCase() === "pending").length || 0;
 
   return (
     <div className="space-y-6">

@@ -20,7 +20,7 @@ export default function ProjectCard({ project, onEdit }: ProjectCardProps) {
 
   // Calculate outstanding (pending) requisitions for this project
   const outstandingCount = requisitions?.filter(req => 
-    req.projectId === project.id && req.status === "pending"
+    req.projectId === project.id && req.status.toLowerCase() === "pending"
   ).length || 0;
 
   return (
