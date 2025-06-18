@@ -290,61 +290,62 @@ export async function generatePDF(
   doc.setFont('helvetica', 'bold');
   doc.text(`Delivery Information`, 16, finalY + 16);
   
-  let deliveryY = finalY + 24;
+  let deliveryY = finalY + 22;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   
   // Delivery Address
   doc.text(`Address:`, 16, deliveryY);
+  deliveryY += 2; // Move to next line for address content
+  
   if (deliveryAddressLines.length > 0) {
     deliveryAddressLines.forEach((line, index) => {
-      doc.text(line, 55, deliveryY + (index * 5));
+      doc.text(line, 75, deliveryY + (index * 4));
     });
-    deliveryY += deliveryAddressLines.length * 5 + 3;
+    deliveryY += deliveryAddressLines.length * 4 + 4;
   } else {
-    deliveryY += 8;
+    deliveryY += 6;
   }
   
   // Required By Date
   doc.text(`Required By:`, 16, deliveryY);
   doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 75, deliveryY);
-  deliveryY += 8;
+  deliveryY += 6;
   
   // Delivery Instructions
   if (deliveryInstructionLines.length > 0) {
     doc.text(`Instructions:`, 16, deliveryY);
+    deliveryY += 2; // Move to next line for instruction content
+    
     deliveryInstructionLines.forEach((line, index) => {
-      // Handle long lines by splitting them
-      const maxWidth = 120; // Approximate character width for the box
-      if (line.length > maxWidth) {
+      // Split long lines properly
+      if (line.length > 100) {
         const words = line.split(' ');
         let currentLine = '';
-        let lineIndex = 0;
+        let lineCount = 0;
         
-        words.forEach((word: string) => {
-          if ((currentLine + word).length <= maxWidth) {
+        for (const word of words) {
+          if ((currentLine + word + ' ').length <= 100) {
             currentLine += (currentLine ? ' ' : '') + word;
           } else {
             if (currentLine) {
-              doc.text(currentLine, 75, deliveryY + (lineIndex * 5));
-              lineIndex++;
+              doc.text(currentLine, 75, deliveryY + (lineCount * 4));
+              lineCount++;
               currentLine = word;
-            } else {
-              doc.text(word, 75, deliveryY + (lineIndex * 5));
-              lineIndex++;
             }
           }
-        });
-        
-        if (currentLine) {
-          doc.text(currentLine, 75, deliveryY + (lineIndex * 5));
         }
         
-        deliveryY += (lineIndex + 1) * 5;
+        if (currentLine) {
+          doc.text(currentLine, 75, deliveryY + (lineCount * 4));
+          lineCount++;
+        }
+        
+        deliveryY += lineCount * 4;
       } else {
-        doc.text(line, 75, deliveryY + (index * 5));
+        doc.text(line, 75, deliveryY + (index * 4));
         if (index === deliveryInstructionLines.length - 1) {
-          deliveryY += (index + 1) * 5;
+          deliveryY += (index + 1) * 4;
         }
       }
     });
