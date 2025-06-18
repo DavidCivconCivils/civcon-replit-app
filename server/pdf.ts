@@ -26,26 +26,37 @@ export async function generatePDF(
   type: 'requisition' | 'purchaseOrder',
   data: RequisitionData | PurchaseOrderData
 ): Promise<Buffer> {
-  // Create PDF with compression options
+  // Create PDF with compression options and proper page management
   const doc = new jsPDF({
     compress: true,
     putOnlyUsedFonts: true,
-    precision: 2
+    precision: 2,
+    format: 'a4'
   });
+
+  const pageHeight = doc.internal.pageSize.height;
+  const pageWidth = doc.internal.pageSize.width;
+  const margin = 14;
+  let currentY = 20;
+  
+  // Helper function to check if we need a new page
+  const checkPageBreak = (requiredHeight: number) => {
+    if (currentY + requiredHeight > pageHeight - 30) {
+      doc.addPage();
+      currentY = 20;
+      return true;
+    }
+    return false;
+  };
   
   // Add company information block with logo
   try {
-    // Get absolute path to logo file
     const logoPath = path.resolve('./public/Civcon Civils Logo.png');
     console.log('Using logo path:', logoPath);
     
-    // Check if file exists
     if (fs.existsSync(logoPath)) {
-      // Read the file as base64
       const logoData = fs.readFileSync(logoPath, { encoding: 'base64' });
       const imgData = `data:image/png;base64,${logoData}`;
-      
-      // Add image using base64 data with normal quality
       doc.addImage(imgData, 'PNG', 140, 10, 50, 20);
       console.log('Logo added to PDF successfully');
     } else {
@@ -53,13 +64,12 @@ export async function generatePDF(
     }
   } catch (error) {
     console.error('Error adding logo to PDF:', error);
-    // Fallback text if logo can't be loaded
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('CIVCON CIVIL ENGINEERING', 140, 20);
   }
   
-  // Add Civcon's address
+  // Add Civcon's address (right side)
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Civcon Civil Engineering Ltd', 140, 32);
@@ -69,72 +79,81 @@ export async function generatePDF(
   doc.text('Tel: 01252 717700', 140, 52);
   doc.text('Email: info@civconcivils.co.uk', 140, 57);
   
-  // Document header
+  // Document header - left side
+  currentY = 20;
   doc.setFontSize(18);
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.text(type === 'requisition' ? 'Purchase Requisition' : 'Purchase Order', 14, 20);
+  doc.text(type === 'requisition' ? 'Purchase Requisition' : 'Purchase Order', margin, currentY);
+  currentY += 8;
   
-  // Document number - make it more prominent with highlighting
+  // Document number with highlighting
   const documentNumber = type === 'requisition' 
     ? (data as RequisitionData).requisition.requisitionNumber 
     : (data as PurchaseOrderData).purchaseOrder.poNumber;
   
   if (type === 'purchaseOrder') {
-    // Add highlight background for PO number (critical)
-    doc.setFillColor(255, 255, 200); // Light yellow highlight
-    doc.rect(14, 22, 100, 9, 'F');
-    
-    doc.setFontSize(14); // Larger font
+    doc.setFillColor(255, 255, 200);
+    doc.rect(margin, currentY - 2, 100, 9, 'F');
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Purchase Order Number: ${documentNumber}`, 14, 28);
+    doc.text(`Purchase Order Number: ${documentNumber}`, margin, currentY + 4);
+    currentY += 12;
   } else {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Requisition Number: ${documentNumber}`, 14, 26);
+    doc.text(`Requisition Number: ${documentNumber}`, margin, currentY);
+    currentY += 8;
   }
   
+  // Project & Date Info section
+  currentY += 4;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   
-  // Project & Date Info
   const project = data.project;
-  doc.text(`Project:`, 14, 40);
+  doc.text(`Project:`, margin, currentY);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${project.name} (${project.contractNumber})`, 40, 40);
+  doc.text(`${project.name} (${project.contractNumber})`, margin + 26, currentY);
   doc.setFont('helvetica', 'normal');
+  currentY += 6;
   
-  doc.text(`Date:`, 14, 46);
+  doc.text(`Date:`, margin, currentY);
   doc.setFont('helvetica', 'bold');
   const date = type === 'requisition' 
     ? format(new Date((data as RequisitionData).requisition.requestDate), 'MMM dd, yyyy')
     : format(new Date((data as PurchaseOrderData).purchaseOrder.issueDate), 'MMM dd, yyyy');
-  doc.text(date, 40, 46);
+  doc.text(date, margin + 26, currentY);
   doc.setFont('helvetica', 'normal');
+  currentY += 6;
   
   if (type === 'requisition') {
     const requisitionData = data as RequisitionData;
-    doc.text(`Requested By:`, 14, 52);
+    doc.text(`Requested By:`, margin, currentY);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${requisitionData.user.firstName || ''} ${requisitionData.user.lastName || ''}`, 40, 52);
+    doc.text(`${requisitionData.user.firstName || ''} ${requisitionData.user.lastName || ''}`, margin + 26, currentY);
     doc.setFont('helvetica', 'normal');
   } else {
     const poData = data as PurchaseOrderData;
-    doc.text(`Approved By:`, 14, 52);
+    doc.text(`Approved By:`, margin, currentY);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${poData.approver.firstName || ''} ${poData.approver.lastName || ''}`, 40, 52);
+    doc.text(`${poData.approver.firstName || ''} ${poData.approver.lastName || ''}`, margin + 26, currentY);
     doc.setFont('helvetica', 'normal');
   }
+  currentY += 6;
   
-  doc.text(`Status:`, 14, 58);
+  doc.text(`Status:`, margin, currentY);
   doc.setFont('helvetica', 'bold');
   const status = type === 'requisition' 
     ? (data as RequisitionData).requisition.status
     : (data as PurchaseOrderData).purchaseOrder.status;
-  doc.text(status.charAt(0).toUpperCase() + status.slice(1), 40, 58);
+  doc.text(status.charAt(0).toUpperCase() + status.slice(1), margin + 26, currentY);
   doc.setFont('helvetica', 'normal');
+  currentY += 8;
   
-  // Calculate supplier box height based on content
+  // Supplier Information section with dynamic sizing
+  checkPageBreak(40);
+  
   const supplierAddressLines = data.supplier.address.split('\n').filter(line => line.trim());
   const supplierContactLines = [
     data.supplier.email ? `Email: ${data.supplier.email}` : '',
@@ -144,42 +163,45 @@ export async function generatePDF(
   
   const supplierBoxHeight = 15 + (supplierAddressLines.length * 4) + (supplierContactLines.length * 4);
   
-  // Extended Supplier Info box - dynamic height
   doc.setFillColor(240, 240, 240);
-  doc.rect(14, 65, 180, supplierBoxHeight, 'F');
+  doc.rect(margin, currentY, pageWidth - (margin * 2), supplierBoxHeight, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Supplier Information`, 16, 71);
+  doc.text(`Supplier Information`, margin + 2, currentY + 6);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   
-  let supplierY = 76;
+  let supplierY = currentY + 11;
   
   // Supplier name
   doc.setFont('helvetica', 'bold');
-  doc.text(data.supplier.name, 16, supplierY);
+  doc.text(data.supplier.name, margin + 2, supplierY);
   doc.setFont('helvetica', 'normal');
   supplierY += 5;
   
-  // Handle multi-line address properly
+  // Multi-line address
   supplierAddressLines.forEach((line, index) => {
     if (line.trim()) {
-      doc.text(line.trim(), 16, supplierY + (index * 4));
+      doc.text(line.trim(), margin + 2, supplierY + (index * 4));
     }
   });
   supplierY += supplierAddressLines.length * 4 + 2;
   
-  // Add contact information below address
+  // Contact information
   supplierContactLines.forEach((line, index) => {
-    doc.text(line, 16, supplierY + (index * 4));
+    doc.text(line, margin + 2, supplierY + (index * 4));
   });
   
-  // Items Table - position after supplier box
-  const tableStartY = 65 + supplierBoxHeight + 10;
+  currentY += supplierBoxHeight + 8;
+  
+  // Items Table section
+  checkPageBreak(60); // Ensure table has enough space
+  
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, 14, tableStartY);
+  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, margin, currentY);
   doc.setFont('helvetica', 'normal');
+  currentY += 5;
   
   const tableColumns = [
     { header: '#', dataKey: 'index' },
@@ -246,11 +268,12 @@ export async function generatePDF(
   footerRows.push(['', '', '', '', '', 'Total:', `£${totalAmount}`]);
   
   autoTable(doc, {
-    startY: tableStartY + 5,
+    startY: currentY,
     head: [tableColumns.map(col => col.header)],
     body: tableRows.map(row => tableColumns.map(col => row[col.dataKey as keyof typeof row])),
     foot: footerRows,
     theme: 'striped',
+    margin: { left: margin, right: margin },
     headStyles: {
       fillColor: [26, 82, 118],
       textColor: [255, 255, 255],
@@ -260,55 +283,54 @@ export async function generatePDF(
       fillColor: [240, 240, 240],
       textColor: [0, 0, 0],
       fontStyle: 'bold'
+    },
+    didDrawPage: (data) => {
+      currentY = data.cursor?.y || currentY;
     }
   });
   
-  // Get the last position after the table
-  const finalY = (doc as any).lastAutoTable.finalY || 150;
+  // Update currentY after table
+  currentY = (doc as any).lastAutoTable.finalY + 10;
   
-  // Delivery Info
+  // Delivery Info section
   const deliveryData = type === 'requisition' 
     ? (data as RequisitionData).requisition 
     : (data as PurchaseOrderData).requisition;
   
-  // Calculate proper spacing and box height
-  let deliveryContentHeight = 8; // Base height for header
+  // Calculate delivery box content
   let deliveryAddressLines: string[] = [];
   let deliveryInstructionLines: string[] = [];
   
-  // Process address
   if (deliveryData.deliveryAddress) {
     deliveryAddressLines = deliveryData.deliveryAddress.split(',').map(line => line.trim()).filter(line => line);
-    deliveryContentHeight += Math.max(1, deliveryAddressLines.length) * 5 + 3; // Address lines + spacing
   }
   
-  // Process instructions
   if (deliveryData.deliveryInstructions && deliveryData.deliveryInstructions.trim()) {
     deliveryInstructionLines = deliveryData.deliveryInstructions.split('\n').map(line => line.trim()).filter(line => line);
-    deliveryContentHeight += Math.max(1, deliveryInstructionLines.length) * 5 + 6; // Instruction lines + spacing
   }
   
-  deliveryContentHeight += 8; // Required By date + final spacing
-  const deliveryBoxHeight = Math.max(35, deliveryContentHeight);
+  const deliveryBoxHeight = Math.max(35, 15 + (deliveryAddressLines.length * 4) + (deliveryInstructionLines.length * 4) + 8);
+  
+  // Check if delivery section fits on current page
+  checkPageBreak(deliveryBoxHeight + 20);
   
   // Delivery Information Box
   doc.setFillColor(250, 250, 250);
-  doc.rect(14, finalY + 10, 180, deliveryBoxHeight, 'F');
+  doc.rect(margin, currentY, pageWidth - (margin * 2), deliveryBoxHeight, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Delivery Information`, 16, finalY + 16);
+  doc.text(`Delivery Information`, margin + 2, currentY + 6);
   
-  let deliveryY = finalY + 22;
+  let deliveryY = currentY + 12;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   
   // Delivery Address
-  doc.text(`Address:`, 16, deliveryY);
-  deliveryY += 2; // Move to next line for address content
+  doc.text(`Address:`, margin + 2, deliveryY);
   
   if (deliveryAddressLines.length > 0) {
     deliveryAddressLines.forEach((line, index) => {
-      doc.text(line, 75, deliveryY + (index * 4));
+      doc.text(line, margin + 32, deliveryY + (index * 4));
     });
     deliveryY += deliveryAddressLines.length * 4 + 4;
   } else {
@@ -316,87 +338,68 @@ export async function generatePDF(
   }
   
   // Required By Date
-  doc.text(`Required By:`, 16, deliveryY);
-  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 75, deliveryY);
+  doc.text(`Required By:`, margin + 2, deliveryY);
+  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), margin + 32, deliveryY);
   deliveryY += 6;
   
   // Delivery Instructions
   if (deliveryInstructionLines.length > 0) {
-    doc.text(`Instructions:`, 16, deliveryY);
-    deliveryY += 2; // Move to next line for instruction content
+    doc.text(`Instructions:`, margin + 2, deliveryY);
     
     deliveryInstructionLines.forEach((line, index) => {
-      // Split long lines properly
-      if (line.length > 100) {
-        const words = line.split(' ');
-        let currentLine = '';
-        let lineCount = 0;
-        
-        for (const word of words) {
-          if ((currentLine + word + ' ').length <= 100) {
-            currentLine += (currentLine ? ' ' : '') + word;
-          } else {
-            if (currentLine) {
-              doc.text(currentLine, 75, deliveryY + (lineCount * 4));
-              lineCount++;
-              currentLine = word;
-            }
-          }
-        }
-        
-        if (currentLine) {
-          doc.text(currentLine, 75, deliveryY + (lineCount * 4));
-          lineCount++;
-        }
-        
-        deliveryY += lineCount * 4;
-      } else {
-        doc.text(line, 75, deliveryY + (index * 4));
-        if (index === deliveryInstructionLines.length - 1) {
-          deliveryY += (index + 1) * 4;
-        }
-      }
+      doc.text(line, margin + 32, deliveryY + 2 + (index * 4));
     });
   }
   
-  // Calculate dynamic positioning based on delivery information size
-  const termsStartY = finalY + 15 + deliveryBoxHeight;
+  currentY += deliveryBoxHeight + 10;
   
-  // Invoice Submission and Terms Information
+  // Terms and Invoice submission section
   if (type === 'purchaseOrder') {
-    doc.setFillColor(240, 240, 240);
-    doc.rect(14, termsStartY, 180, 25, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Invoice Submission Instructions`, 16, termsStartY + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Please submit all invoices to: accounts.payable@civconcivils.co.uk`, 16, termsStartY + 12);
-    doc.text(`Include this Purchase Order Number (${documentNumber}) in your invoice.`, 16, termsStartY + 17);
+    // Check if we need space for invoice submission box
+    checkPageBreak(45);
     
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, currentY, pageWidth - (margin * 2), 25, 'F');
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Terms and Conditions`, 16, termsStartY + 28);
+    doc.text(`Invoice Submission Instructions`, margin + 2, currentY + 6);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.setTextColor(0, 0, 255); // Blue color for link
-    doc.text(`View full terms and conditions online:`, 16, termsStartY + 34);
-    doc.text(`https://civconcivils.co.uk/wp-content/uploads/2025/02/Purchase-Order-Terms-and-Conditions.pdf`, 16, termsStartY + 39);
-    doc.setTextColor(0, 0, 0); // Reset to black
-  } else {
-    // Keep original terms for requisitions
-    doc.setFillColor(240, 240, 240);
-    doc.rect(14, termsStartY, 180, 40, 'F');
+    doc.text(`Please submit all invoices to: accounts.payable@civconcivils.co.uk`, margin + 2, currentY + 12);
+    doc.text(`Include this Purchase Order Number (${documentNumber}) in your invoice.`, margin + 2, currentY + 17);
+    
+    currentY += 30;
+    
+    // Terms section
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Terms and Conditions`, 16, termsStartY + 6);
+    doc.text(`Terms and Conditions`, margin, currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 255);
+    doc.text(`View full terms and conditions online:`, margin, currentY + 6);
+    doc.text(`https://civconcivils.co.uk/wp-content/uploads/2025/02/Purchase-Order-Terms-and-Conditions.pdf`, margin, currentY + 11);
+    doc.setTextColor(0, 0, 0);
+    
+    currentY += 20;
+  } else {
+    // Terms for requisitions
+    checkPageBreak(40);
+    
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, currentY, pageWidth - (margin * 2), 40, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Terms and Conditions`, margin + 2, currentY + 6);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`1. All prices quoted must include delivery to the specified location.`, 16, termsStartY + 12);
-    doc.text(`2. The supplier must notify Civcon of any anticipated delays immediately.`, 16, termsStartY + 17);
-    doc.text(`3. Payment terms are net 30 days from the date of receipt of goods or services.`, 16, termsStartY + 22);
-    doc.text(`4. All goods delivered must match the specifications outlined in this document.`, 16, termsStartY + 27);
-    doc.text(`5. Civcon reserves the right to reject any goods that do not meet the required standards.`, 16, termsStartY + 32);
+    doc.text(`1. All prices quoted must include delivery to the specified location.`, margin + 2, currentY + 12);
+    doc.text(`2. The supplier must notify Civcon of any anticipated delays immediately.`, margin + 2, currentY + 17);
+    doc.text(`3. Payment terms are net 30 days from the date of receipt of goods or services.`, margin + 2, currentY + 22);
+    doc.text(`4. All goods delivered must match the specifications outlined in this document.`, margin + 2, currentY + 27);
+    doc.text(`5. Civcon reserves the right to reject any goods that do not meet the required standards.`, margin + 2, currentY + 32);
+    
+    currentY += 45;
   }
   
   // Approval Section
