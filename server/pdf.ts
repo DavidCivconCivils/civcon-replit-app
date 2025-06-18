@@ -134,43 +134,51 @@ export async function generatePDF(
   doc.text(status.charAt(0).toUpperCase() + status.slice(1), 40, 58);
   doc.setFont('helvetica', 'normal');
   
-  // Extended Supplier Info box - increased height to accommodate all information
+  // Calculate supplier box height based on content
+  const supplierAddressLines = data.supplier.address.split('\n').filter(line => line.trim());
+  const supplierContactLines = [
+    data.supplier.email ? `Email: ${data.supplier.email}` : '',
+    data.supplier.phone ? `Phone: ${data.supplier.phone}` : '',
+    data.supplier.contactPerson ? `Contact: ${data.supplier.contactPerson}` : ''
+  ].filter(line => line);
+  
+  const supplierBoxHeight = 15 + (supplierAddressLines.length * 4) + (supplierContactLines.length * 4);
+  
+  // Extended Supplier Info box - dynamic height
   doc.setFillColor(240, 240, 240);
-  doc.rect(14, 65, 180, 35, 'F'); // Increased height from 25 to 35
+  doc.rect(14, 65, 180, supplierBoxHeight, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(`Supplier Information`, 16, 71);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
+  
+  let supplierY = 76;
   
   // Supplier name
-  doc.text(data.supplier.name, 16, 77);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.supplier.name, 16, supplierY);
+  doc.setFont('helvetica', 'normal');
+  supplierY += 5;
   
   // Handle multi-line address properly
-  const supplierAddressLines = data.supplier.address.split('\n');
-  let supplierY = 82;
   supplierAddressLines.forEach((line, index) => {
     if (line.trim()) {
       doc.text(line.trim(), 16, supplierY + (index * 4));
     }
   });
+  supplierY += supplierAddressLines.length * 4 + 2;
   
   // Add contact information below address
-  const contactY = supplierY + (supplierAddressLines.length * 4);
-  if (data.supplier.email) {
-    doc.text(`Email: ${data.supplier.email}`, 16, contactY);
-  }
-  if (data.supplier.phone) {
-    doc.text(`Phone: ${data.supplier.phone}`, 16, contactY + 4);
-  }
-  if (data.supplier.contactPerson) {
-    doc.text(`Contact: ${data.supplier.contactPerson}`, 16, contactY + 8);
-  }
+  supplierContactLines.forEach((line, index) => {
+    doc.text(line, 16, supplierY + (index * 4));
+  });
   
-  // Items Table
+  // Items Table - position after supplier box
+  const tableStartY = 65 + supplierBoxHeight + 10;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, 14, 110);
+  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, 14, tableStartY);
   doc.setFont('helvetica', 'normal');
   
   const tableColumns = [
@@ -238,7 +246,7 @@ export async function generatePDF(
   footerRows.push(['', '', '', '', '', 'Total:', `£${totalAmount}`]);
   
   autoTable(doc, {
-    startY: 115,
+    startY: tableStartY + 5,
     head: [tableColumns.map(col => col.header)],
     body: tableRows.map(row => tableColumns.map(col => row[col.dataKey as keyof typeof row])),
     foot: footerRows,
