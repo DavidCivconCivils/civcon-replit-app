@@ -33,7 +33,7 @@ export async function generatePDF(
     precision: 2
   });
   
-  // Add company logo - with compression to reduce file size
+  // Add company information block with logo
   try {
     // Get absolute path to logo file
     const logoPath = path.resolve('./public/Civcon Civils Logo.png');
@@ -46,7 +46,7 @@ export async function generatePDF(
       const imgData = `data:image/png;base64,${logoData}`;
       
       // Add image using base64 data with normal quality
-      doc.addImage(imgData, 'PNG', 140, 10, 50, 20); // Restored to original size and quality
+      doc.addImage(imgData, 'PNG', 140, 10, 50, 20);
       console.log('Logo added to PDF successfully');
     } else {
       throw new Error('Logo file not found at: ' + logoPath);
@@ -58,6 +58,16 @@ export async function generatePDF(
     doc.setFont('helvetica', 'bold');
     doc.text('CIVCON CIVIL ENGINEERING', 140, 20);
   }
+  
+  // Add Civcon's address
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Civcon Civil Engineering Ltd', 140, 32);
+  doc.text('Unit 5, Riverside Business Park', 140, 37);
+  doc.text('Dogflud Way, Farnham', 140, 42);
+  doc.text('Surrey, GU9 7UG', 140, 47);
+  doc.text('Tel: 01252 717700', 140, 52);
+  doc.text('Email: info@civconcivils.co.uk', 140, 57);
   
   // Document header
   doc.setFontSize(18);
@@ -124,22 +134,43 @@ export async function generatePDF(
   doc.text(status.charAt(0).toUpperCase() + status.slice(1), 40, 58);
   doc.setFont('helvetica', 'normal');
   
-  // Supplier Info box
+  // Extended Supplier Info box - increased height to accommodate all information
   doc.setFillColor(240, 240, 240);
-  doc.rect(14, 65, 180, 25, 'F');
+  doc.rect(14, 65, 180, 35, 'F'); // Increased height from 25 to 35
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(`Supplier Information`, 16, 71);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
+  
+  // Supplier name
   doc.text(data.supplier.name, 16, 77);
-  doc.text(data.supplier.address, 16, 83);
-  doc.text(data.supplier.email, 16, 89);
+  
+  // Handle multi-line address properly
+  const addressLines = data.supplier.address.split('\n');
+  let currentY = 82;
+  addressLines.forEach((line, index) => {
+    if (line.trim()) {
+      doc.text(line.trim(), 16, currentY + (index * 4));
+    }
+  });
+  
+  // Add contact information below address
+  const contactY = currentY + (addressLines.length * 4);
+  if (data.supplier.email) {
+    doc.text(`Email: ${data.supplier.email}`, 16, contactY);
+  }
+  if (data.supplier.phone) {
+    doc.text(`Phone: ${data.supplier.phone}`, 16, contactY + 4);
+  }
+  if (data.supplier.contactPerson) {
+    doc.text(`Contact: ${data.supplier.contactPerson}`, 16, contactY + 8);
+  }
   
   // Items Table
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, 14, 100);
+  doc.text(`${type === 'requisition' ? 'Requisition' : 'Purchase Order'} Items`, 14, 110);
   doc.setFont('helvetica', 'normal');
   
   const tableColumns = [
@@ -207,7 +238,7 @@ export async function generatePDF(
   footerRows.push(['', '', '', '', '', 'Total:', `£${totalAmount}`]);
   
   autoTable(doc, {
-    startY: 105,
+    startY: 115,
     head: [tableColumns.map(col => col.header)],
     body: tableRows.map(row => tableColumns.map(col => row[col.dataKey as keyof typeof row])),
     foot: footerRows,
@@ -248,71 +279,95 @@ export async function generatePDF(
     }
   }
   
-  // Terms and Conditions
-  doc.setFillColor(240, 240, 240);
-  doc.rect(14, finalY + 30, 180, 40, 'F');
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Terms and Conditions`, 16, finalY + 36);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`1. All prices quoted must include delivery to the specified location.`, 16, finalY + 42);
-  doc.text(`2. The supplier must notify Civcon of any anticipated delays immediately.`, 16, finalY + 47);
-  doc.text(`3. Payment terms are net 30 days from the date of receipt of goods or services.`, 16, finalY + 52);
-  doc.text(`4. All goods delivered must match the specifications outlined in this document.`, 16, finalY + 57);
-  doc.text(`5. Civcon reserves the right to reject any goods that do not meet the required standards.`, 16, finalY + 62);
+  // Invoice Submission and Terms Information
+  if (type === 'purchaseOrder') {
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, finalY + 30, 180, 25, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Invoice Submission Instructions`, 16, finalY + 36);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Please submit all invoices to: accounts.payable@civconcivils.co.uk`, 16, finalY + 42);
+    doc.text(`Include this Purchase Order Number (${documentNumber}) in your invoice.`, 16, finalY + 47);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Terms and Conditions`, 16, finalY + 58);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 255); // Blue color for link
+    doc.text(`View full terms and conditions online:`, 16, finalY + 64);
+    doc.text(`https://civconcivils.co.uk/wp-content/uploads/2025/02/Purchase-Order-Terms-and-Conditions.pdf`, 16, finalY + 69);
+    doc.setTextColor(0, 0, 0); // Reset to black
+  } else {
+    // Keep original terms for requisitions
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, finalY + 30, 180, 40, 'F');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Terms and Conditions`, 16, finalY + 36);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`1. All prices quoted must include delivery to the specified location.`, 16, finalY + 42);
+    doc.text(`2. The supplier must notify Civcon of any anticipated delays immediately.`, 16, finalY + 47);
+    doc.text(`3. Payment terms are net 30 days from the date of receipt of goods or services.`, 16, finalY + 52);
+    doc.text(`4. All goods delivered must match the specifications outlined in this document.`, 16, finalY + 57);
+    doc.text(`5. Civcon reserves the right to reject any goods that do not meet the required standards.`, 16, finalY + 62);
+  }
   
   // Approval Section
+  const approvalY = type === 'purchaseOrder' ? finalY + 80 : finalY + 75;
   doc.setLineWidth(0.5);
-  doc.line(14, finalY + 75, 194, finalY + 75);
+  doc.line(14, approvalY, 194, approvalY);
   
   if (type === 'requisition') {
     const requisitionData = data as RequisitionData;
     doc.setFontSize(10);
     
-    doc.text(`Requested By:`, 14, finalY + 81);
+    doc.text(`Requested By:`, 14, approvalY + 6);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${requisitionData.user.firstName || ''} ${requisitionData.user.lastName || ''}`, 14, finalY + 87);
+    doc.text(`${requisitionData.user.firstName || ''} ${requisitionData.user.lastName || ''}`, 14, approvalY + 12);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(requisitionData.user.role || 'Requester', 14, finalY + 92);
-    doc.text(format(new Date(requisitionData.requisition.requestDate), 'MMM dd, yyyy'), 14, finalY + 97);
+    doc.text(requisitionData.user.role || 'Requester', 14, approvalY + 17);
+    doc.text(format(new Date(requisitionData.requisition.requestDate), 'MMM dd, yyyy'), 14, approvalY + 22);
     
     doc.setFontSize(10);
-    doc.text(`Approved By:`, 120, finalY + 81);
+    doc.text(`Approved By:`, 120, approvalY + 6);
     
     if (requisitionData.requisition.status === 'pending') {
       doc.setFont('helvetica', 'italic');
-      doc.text(`Pending Approval`, 120, finalY + 87);
+      doc.text(`Pending Approval`, 120, approvalY + 12);
     } else if (requisitionData.requisition.status === 'approved') {
       doc.setFont('helvetica', 'bold');
-      doc.text(`Finance Team`, 120, finalY + 87);
+      doc.text(`Finance Team`, 120, approvalY + 12);
     } else if (requisitionData.requisition.status === 'rejected') {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(220, 53, 69);
-      doc.text(`Rejected`, 120, finalY + 87);
+      doc.text(`Rejected`, 120, approvalY + 12);
       doc.setTextColor(0, 0, 0);
     }
   } else {
     const poData = data as PurchaseOrderData;
     doc.setFontSize(10);
     
-    doc.text(`Issued By:`, 14, finalY + 81);
+    doc.text(`Issued By:`, 14, approvalY + 6);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${poData.approver.firstName || ''} ${poData.approver.lastName || ''}`, 14, finalY + 87);
+    doc.text(`${poData.approver.firstName || ''} ${poData.approver.lastName || ''}`, 14, approvalY + 12);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(poData.approver.role || 'Finance Team', 14, finalY + 92);
-    doc.text(format(new Date(poData.purchaseOrder.issueDate), 'MMM dd, yyyy'), 14, finalY + 97);
+    doc.text(poData.approver.role || 'Finance Team', 14, approvalY + 17);
+    doc.text(format(new Date(poData.purchaseOrder.issueDate), 'MMM dd, yyyy'), 14, approvalY + 22);
     
     doc.setFontSize(10);
-    doc.text(`Original Requisition:`, 120, finalY + 81);
+    doc.text(`Original Requisition:`, 120, approvalY + 6);
     doc.setFont('helvetica', 'bold');
-    doc.text(poData.requisition.requisitionNumber, 120, finalY + 87);
+    doc.text(poData.requisition.requisitionNumber, 120, approvalY + 12);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Requested by: ${poData.requisition.requestedById}`, 120, finalY + 92);
-    doc.text(format(new Date(poData.requisition.requestDate), 'MMM dd, yyyy'), 120, finalY + 97);
+    doc.text(`Requested by: ${poData.requisition.requestedById}`, 120, approvalY + 17);
+    doc.text(format(new Date(poData.requisition.requestDate), 'MMM dd, yyyy'), 120, approvalY + 22);
   }
   
   // Footer with page number
