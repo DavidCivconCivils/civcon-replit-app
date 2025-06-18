@@ -63,9 +63,9 @@ export async function generatePDF(
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Civcon Civil Engineering Ltd', 140, 32);
-  doc.text('Unit 5, Riverside Business Park', 140, 37);
-  doc.text('Dogflud Way, Farnham', 140, 42);
-  doc.text('Surrey, GU9 7UG', 140, 47);
+  doc.text('113 Brigshaw Drive', 140, 37);
+  doc.text('Allerton Bywater, Castleford', 140, 42);
+  doc.text('WF10 2HS', 140, 47);
   doc.text('Tel: 01252 717700', 140, 52);
   doc.text('Email: info@civconcivils.co.uk', 140, 57);
   
@@ -276,6 +276,25 @@ export async function generatePDF(
     if (requisitionData.requisition.deliveryInstructions) {
       doc.text(`Delivery Instructions:`, 14, finalY + 22);
       doc.text(requisitionData.requisition.deliveryInstructions, 70, finalY + 22);
+    }
+  } else {
+    // Add delivery info for Purchase Orders
+    const poData = data as PurchaseOrderData;
+    
+    doc.setFontSize(10);
+    doc.text(`Delivery Address:`, 14, finalY + 10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(poData.requisition.deliveryAddress, 70, finalY + 10);
+    doc.setFont('helvetica', 'normal');
+    
+    doc.text(`Required By:`, 14, finalY + 16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(format(new Date(poData.requisition.deliveryDate), 'MMM dd, yyyy'), 70, finalY + 16);
+    doc.setFont('helvetica', 'normal');
+    
+    if (poData.requisition.deliveryInstructions) {
+      doc.text(`Delivery Instructions:`, 14, finalY + 22);
+      doc.text(poData.requisition.deliveryInstructions, 70, finalY + 22);
     }
   }
   
