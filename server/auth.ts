@@ -7,8 +7,7 @@ import * as crypto from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import MemoryStore from "memorystore";
 
 declare global {
   namespace Express {
@@ -32,16 +31,14 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const PostgresSessionStore = connectPg(session);
+  const MemStore = MemoryStore(session);
   
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
     resave: false,
     saveUninitialized: false,
-    store: new PostgresSessionStore({
-      pool,
-      tableName: 'sessions',
-      createTableIfMissing: true
+    store: new MemStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     }),
     cookie: {
       httpOnly: true,
@@ -156,7 +153,7 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     console.log("Login attempt for:", req.body.email);
     
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Authentication error:", err);
         return next(err);
@@ -278,7 +275,7 @@ export function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = (req: any, res: any, next: any) => {
   if (req.isAuthenticated()) {
     return next();
   }
