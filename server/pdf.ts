@@ -147,16 +147,16 @@ export async function generatePDF(
   doc.text(data.supplier.name, 16, 77);
   
   // Handle multi-line address properly
-  const addressLines = data.supplier.address.split('\n');
+  const supplierAddressLines = data.supplier.address.split('\n');
   let supplierY = 82;
-  addressLines.forEach((line, index) => {
+  supplierAddressLines.forEach((line, index) => {
     if (line.trim()) {
       doc.text(line.trim(), 16, supplierY + (index * 4));
     }
   });
   
   // Add contact information below address
-  const contactY = supplierY + (addressLines.length * 4);
+  const contactY = supplierY + (supplierAddressLines.length * 4);
   if (data.supplier.email) {
     doc.text(`Email: ${data.supplier.email}`, 16, contactY);
   }
@@ -263,10 +263,25 @@ export async function generatePDF(
     ? (data as RequisitionData).requisition 
     : (data as PurchaseOrderData).requisition;
   
-  // Calculate dynamic height based on content
-  const addressLineCount = deliveryData.deliveryAddress ? deliveryData.deliveryAddress.split(',').length : 1;
-  const instructionLineCount = deliveryData.deliveryInstructions ? deliveryData.deliveryInstructions.split('\n').length : 0;
-  const deliveryBoxHeight = 20 + (addressLineCount * 4) + (instructionLineCount > 0 ? (instructionLineCount * 4) + 8 : 4);
+  // Calculate proper spacing and box height
+  let deliveryContentHeight = 8; // Base height for header
+  let deliveryAddressLines: string[] = [];
+  let deliveryInstructionLines: string[] = [];
+  
+  // Process address
+  if (deliveryData.deliveryAddress) {
+    deliveryAddressLines = deliveryData.deliveryAddress.split(',').map(line => line.trim()).filter(line => line);
+    deliveryContentHeight += Math.max(1, deliveryAddressLines.length) * 5 + 3; // Address lines + spacing
+  }
+  
+  // Process instructions
+  if (deliveryData.deliveryInstructions && deliveryData.deliveryInstructions.trim()) {
+    deliveryInstructionLines = deliveryData.deliveryInstructions.split('\n').map(line => line.trim()).filter(line => line);
+    deliveryContentHeight += Math.max(1, deliveryInstructionLines.length) * 5 + 6; // Instruction lines + spacing
+  }
+  
+  deliveryContentHeight += 8; // Required By date + final spacing
+  const deliveryBoxHeight = Math.max(35, deliveryContentHeight);
   
   // Delivery Information Box
   doc.setFillColor(250, 250, 250);
@@ -274,43 +289,63 @@ export async function generatePDF(
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(`Delivery Information`, 16, finalY + 16);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
   
-  let deliveryY = finalY + 22;
+  let deliveryY = finalY + 24;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
   
   // Delivery Address
   doc.text(`Address:`, 16, deliveryY);
-  if (deliveryData.deliveryAddress) {
-    const deliveryAddressLines = deliveryData.deliveryAddress.split(',').map(line => line.trim());
+  if (deliveryAddressLines.length > 0) {
     deliveryAddressLines.forEach((line, index) => {
-      if (line) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(line, 55, deliveryY + (index * 4));
-        doc.setFont('helvetica', 'normal');
-      }
+      doc.text(line, 55, deliveryY + (index * 5));
     });
-    deliveryY += deliveryAddressLines.length * 4;
+    deliveryY += deliveryAddressLines.length * 5 + 3;
+  } else {
+    deliveryY += 8;
   }
   
   // Required By Date
-  deliveryY += 2;
   doc.text(`Required By:`, 16, deliveryY);
-  doc.setFont('helvetica', 'bold');
-  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 70, deliveryY);
-  doc.setFont('helvetica', 'normal');
+  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 75, deliveryY);
+  deliveryY += 8;
   
   // Delivery Instructions
-  if (deliveryData.deliveryInstructions && deliveryData.deliveryInstructions.trim()) {
-    deliveryY += 6;
+  if (deliveryInstructionLines.length > 0) {
     doc.text(`Instructions:`, 16, deliveryY);
-    
-    const instructionLines = deliveryData.deliveryInstructions.split('\n');
-    instructionLines.forEach((line, index) => {
-      if (line.trim()) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(line.trim(), 70, deliveryY + (index * 4));
-        doc.setFont('helvetica', 'normal');
+    deliveryInstructionLines.forEach((line, index) => {
+      // Handle long lines by splitting them
+      const maxWidth = 120; // Approximate character width for the box
+      if (line.length > maxWidth) {
+        const words = line.split(' ');
+        let currentLine = '';
+        let lineIndex = 0;
+        
+        words.forEach((word: string) => {
+          if ((currentLine + word).length <= maxWidth) {
+            currentLine += (currentLine ? ' ' : '') + word;
+          } else {
+            if (currentLine) {
+              doc.text(currentLine, 75, deliveryY + (lineIndex * 5));
+              lineIndex++;
+              currentLine = word;
+            } else {
+              doc.text(word, 75, deliveryY + (lineIndex * 5));
+              lineIndex++;
+            }
+          }
+        });
+        
+        if (currentLine) {
+          doc.text(currentLine, 75, deliveryY + (lineIndex * 5));
+        }
+        
+        deliveryY += (lineIndex + 1) * 5;
+      } else {
+        doc.text(line, 75, deliveryY + (index * 5));
+        if (index === deliveryInstructionLines.length - 1) {
+          deliveryY += (index + 1) * 5;
+        }
       }
     });
   }
