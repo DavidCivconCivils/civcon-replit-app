@@ -148,15 +148,15 @@ export async function generatePDF(
   
   // Handle multi-line address properly
   const addressLines = data.supplier.address.split('\n');
-  let currentY = 82;
+  let supplierY = 82;
   addressLines.forEach((line, index) => {
     if (line.trim()) {
-      doc.text(line.trim(), 16, currentY + (index * 4));
+      doc.text(line.trim(), 16, supplierY + (index * 4));
     }
   });
   
   // Add contact information below address
-  const contactY = currentY + (addressLines.length * 4);
+  const contactY = supplierY + (addressLines.length * 4);
   if (data.supplier.email) {
     doc.text(`Email: ${data.supplier.email}`, 16, contactY);
   }
@@ -263,52 +263,59 @@ export async function generatePDF(
     ? (data as RequisitionData).requisition 
     : (data as PurchaseOrderData).requisition;
   
+  // Calculate dynamic height based on content
+  const addressLineCount = deliveryData.deliveryAddress ? deliveryData.deliveryAddress.split(',').length : 1;
+  const instructionLineCount = deliveryData.deliveryInstructions ? deliveryData.deliveryInstructions.split('\n').length : 0;
+  const deliveryBoxHeight = 20 + (addressLineCount * 4) + (instructionLineCount > 0 ? (instructionLineCount * 4) + 8 : 4);
+  
   // Delivery Information Box
   doc.setFillColor(250, 250, 250);
-  doc.rect(14, finalY + 10, 180, 25, 'F');
+  doc.rect(14, finalY + 10, 180, deliveryBoxHeight, 'F');
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(`Delivery Information`, 16, finalY + 16);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
+  
+  let deliveryY = finalY + 22;
   
   // Delivery Address
-  doc.text(`Address:`, 16, finalY + 22);
-  doc.setFont('helvetica', 'bold');
+  doc.text(`Address:`, 16, deliveryY);
   if (deliveryData.deliveryAddress) {
-    const addressLines = deliveryData.deliveryAddress.split(',').map(line => line.trim());
-    addressLines.forEach((line, index) => {
+    const deliveryAddressLines = deliveryData.deliveryAddress.split(',').map(line => line.trim());
+    deliveryAddressLines.forEach((line, index) => {
       if (line) {
-        doc.text(line, 50, finalY + 22 + (index * 4));
+        doc.setFont('helvetica', 'bold');
+        doc.text(line, 55, deliveryY + (index * 4));
+        doc.setFont('helvetica', 'normal');
       }
     });
+    deliveryY += deliveryAddressLines.length * 4;
   }
-  doc.setFont('helvetica', 'normal');
   
   // Required By Date
-  const requiredByY = finalY + 22 + (deliveryData.deliveryAddress ? Math.max(1, deliveryData.deliveryAddress.split(',').length) * 4 : 4);
-  doc.text(`Required By:`, 16, requiredByY);
+  deliveryY += 2;
+  doc.text(`Required By:`, 16, deliveryY);
   doc.setFont('helvetica', 'bold');
-  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 70, requiredByY);
+  doc.text(format(new Date(deliveryData.deliveryDate), 'MMM dd, yyyy'), 70, deliveryY);
   doc.setFont('helvetica', 'normal');
   
   // Delivery Instructions
   if (deliveryData.deliveryInstructions && deliveryData.deliveryInstructions.trim()) {
-    const instructionsY = requiredByY + 6;
-    doc.text(`Instructions:`, 16, instructionsY);
-    doc.setFont('helvetica', 'bold');
+    deliveryY += 6;
+    doc.text(`Instructions:`, 16, deliveryY);
     
     const instructionLines = deliveryData.deliveryInstructions.split('\n');
     instructionLines.forEach((line, index) => {
       if (line.trim()) {
-        doc.text(line.trim(), 70, instructionsY + (index * 4));
+        doc.setFont('helvetica', 'bold');
+        doc.text(line.trim(), 70, deliveryY + (index * 4));
+        doc.setFont('helvetica', 'normal');
       }
     });
-    doc.setFont('helvetica', 'normal');
   }
   
   // Calculate dynamic positioning based on delivery information size
-  const deliveryBoxHeight = 25 + (deliveryData.deliveryInstructions ? 15 : 0);
   const termsStartY = finalY + 15 + deliveryBoxHeight;
   
   // Invoice Submission and Terms Information
