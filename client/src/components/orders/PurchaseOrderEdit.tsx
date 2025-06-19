@@ -16,13 +16,20 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Save, X } from "lucide-react";
+import { Save, X, Plus, Trash2 } from "lucide-react";
+import { useFieldArray } from "react-hook-form";
 
 const purchaseOrderEditSchema = z.object({
   poNumber: z.string().min(1, "PO number is required"),
   issueDate: z.string().min(1, "Issue date is required"),
   status: z.enum(["draft", "issued", "received", "cancelled"]),
-  totalAmount: z.string().min(1, "Total amount is required"),
+  items: z.array(z.object({
+    id: z.number().optional(),
+    description: z.string().min(1, "Description is required"),
+    quantity: z.coerce.number().int().positive("Quantity must be positive"),
+    unit: z.string().min(1, "Unit is required"),
+    unitPrice: z.coerce.number().positive("Unit price must be positive"),
+  })).min(1, "At least one item is required"),
 });
 
 type PurchaseOrderEditFormValues = z.infer<typeof purchaseOrderEditSchema>;
@@ -63,18 +70,29 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
       poNumber: "",
       issueDate: "",
       status: "draft",
-      totalAmount: "",
+      items: [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items"
   });
 
   // Populate form with purchase order data
   useEffect(() => {
-    if (orderData) {
+    if (orderData && orderData.items) {
       form.reset({
         poNumber: orderData.poNumber || "",
         issueDate: orderData.issueDate ? orderData.issueDate.split('T')[0] : "",
         status: orderData.status || "draft",
-        totalAmount: orderData.totalAmount?.toString() || "",
+        items: orderData.items.map((item: any) => ({
+          id: item.id,
+          description: item.description || "",
+          quantity: parseInt(item.quantity?.toString() || "0"),
+          unit: item.unit || "",
+          unitPrice: parseFloat(item.unitPrice?.toString() || "0"),
+        })),
       });
     }
   }, [orderData, form]);
@@ -82,7 +100,20 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
   // Update purchase order mutation
   const updatePurchaseOrderMutation = useMutation({
     mutationFn: async (data: PurchaseOrderEditFormValues) => {
-      return apiRequest(`/api/purchase-orders/${purchaseOrderId}`, 'PUT', data);
+      // Calculate total amount from items
+      const totalAmount = data.items.reduce((sum, item) => {
+        return sum + (item.quantity * item.unitPrice);
+      }, 0);
+      
+      const updateData = {
+        poNumber: data.poNumber,
+        issueDate: data.issueDate,
+        status: data.status,
+        totalAmount: totalAmount.toFixed(2),
+        items: data.items,
+      };
+      
+      return apiRequest(`/api/purchase-orders/${purchaseOrderId}`, 'PUT', updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders'] });
@@ -206,19 +237,17 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="totalAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Amount</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.01" placeholder="0.00" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Calculated Total Display */}
+                <div className="pt-4 border-t">
+                  <Label className="text-sm font-medium">Calculated Total</Label>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(
+                      form.watch("items")?.reduce((sum, item) => {
+                        return sum + ((item?.quantity || 0) * (item?.unitPrice || 0));
+                      }, 0) || 0
+                    )}
+                  </p>
+                </div>
 
                 <div className="flex gap-2 pt-4">
                   <Button 
@@ -298,44 +327,112 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
         </div>
       </div>
 
-      {/* Requisition Items */}
-      {items.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Items from Requisition #{requisition?.requisitionNumber}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item: any, index: number) => {
-                  const unitPrice = parseFloat(item.unitPrice?.toString() || '0');
-                  const quantity = parseInt(item.quantity?.toString() || '0');
-                  const total = unitPrice * quantity;
+      {/* Editable Items */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            Edit Items
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ description: "", quantity: 1, unit: "", unitPrice: 0 })}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Item
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {fields.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-neutral-textLight">No items added yet. Click "Add Item" to start.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                  <div className="md:col-span-2">
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Item description" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   
-                  return (
-                    <TableRow key={index}>
-                      <TableCell>{item.description}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.unit}</TableCell>
-                      <TableCell>{formatCurrency(unitPrice)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(total)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.quantity`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" min="1" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.unit`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., each, kg, m" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.unitPrice`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit Price</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" step="0.01" min="0" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Delivery Information */}
       {requisition && (
