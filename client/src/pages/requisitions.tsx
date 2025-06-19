@@ -5,6 +5,7 @@ import { Requisition, Project, Supplier } from "@shared/schema";
 import RequisitionForm from "@/components/requisitions/RequisitionForm";
 import RequisitionPreview from "@/components/requisitions/RequisitionPreview";
 import RequisitionApprovalDialog from "@/components/requisitions/RequisitionApprovalDialog";
+import RequisitionEdit from "@/components/requisitions/RequisitionEdit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,7 @@ export default function Requisitions() {
   const [requisitionToCancel, setRequisitionToCancel] = useState<Requisition | null>(null);
   const [requisitionToApprove, setRequisitionToApprove] = useState<number | null>(null);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [editingRequisition, setEditingRequisition] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -407,6 +409,14 @@ export default function Requisitions() {
                                     </Button>
                                     <Button
                                       variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-primary hover:text-primary/80"
+                                      onClick={() => setEditingRequisition(req.id)}
+                                    >
+                                      <Edit size={16} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
                                       className="h-8 text-primary hover:text-primary-dark text-xs"
                                       onClick={() => handlePreviewRequisition(req.id)}
                                     >
@@ -518,6 +528,18 @@ export default function Requisitions() {
             onClose={handleCloseApprovalDialog} 
             requisitionId={requisitionToApprove} 
           />
+
+          {/* Requisition Edit Dialog */}
+          <Dialog open={!!editingRequisition} onOpenChange={() => setEditingRequisition(null)}>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              {editingRequisition && (
+                <RequisitionEdit 
+                  requisitionId={editingRequisition} 
+                  onClose={() => setEditingRequisition(null)} 
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

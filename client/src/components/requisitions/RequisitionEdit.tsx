@@ -223,7 +223,7 @@ export default function RequisitionEdit({ requisitionId, onClose }: RequisitionE
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {projects.map((project: any) => (
+                        {(projects as any[]).map((project: any) => (
                           <SelectItem key={project.id} value={project.id.toString()}>
                             {project.name}
                           </SelectItem>
@@ -248,7 +248,7 @@ export default function RequisitionEdit({ requisitionId, onClose }: RequisitionE
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {suppliers.map((supplier: any) => (
+                        {(suppliers as any[]).map((supplier: any) => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
                             {supplier.name}
                           </SelectItem>
