@@ -4,6 +4,7 @@ import { PurchaseOrder, Requisition, Project, Supplier } from "@shared/schema";
 import PurchaseOrderForm from "@/components/orders/PurchaseOrderForm";
 import PurchaseOrderPreview from "@/components/orders/PurchaseOrderPreview";
 import RequisitionApprovalDialog from "@/components/requisitions/RequisitionApprovalDialog";
+import RequisitionPreview from "@/components/requisitions/RequisitionPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,11 +19,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export default function Orders() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState("requisitions");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [selectedRequisition, setSelectedRequisition] = useState<number | null>(null);
+  const [isRequisitionPreviewOpen, setIsRequisitionPreviewOpen] = useState(false);
   const [requisitionToApprove, setRequisitionToApprove] = useState<number | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
 
@@ -134,6 +137,17 @@ export default function Orders() {
   const handleClosePreview = () => {
     setIsPreviewOpen(false);
     setSelectedOrder(null);
+  };
+
+  // Handle requisition preview
+  const handleViewRequisition = (requisitionId: number) => {
+    setSelectedRequisition(requisitionId);
+    setIsRequisitionPreviewOpen(true);
+  };
+
+  const handleCloseRequisitionPreview = () => {
+    setIsRequisitionPreviewOpen(false);
+    setSelectedRequisition(null);
   };
 
   // Handle approve requisition
@@ -332,6 +346,15 @@ export default function Orders() {
                         <TableCell>{formatCurrency(parseFloat(req.totalAmount.toString()))}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRequisition(req.id)}
+                              className="flex items-center"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
                             <Button
                               variant="default"
                               size="sm"

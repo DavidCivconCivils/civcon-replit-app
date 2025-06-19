@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function Requisitions() {
   const [location, setLocation] = useLocation();
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequisition, setSelectedRequisition] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
