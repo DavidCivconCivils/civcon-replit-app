@@ -1338,7 +1338,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Update requisition items
         await storage.deleteRequisitionItems(purchaseOrder.requisitionId);
-        await storage.createRequisitionItems(purchaseOrder.requisitionId, validatedData.items);
+        const itemsForRequisition = validatedData.items.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice.toString(),
+          totalPrice: (item.quantity * item.unitPrice).toFixed(2),
+        }));
+        await storage.createRequisitionItems(purchaseOrder.requisitionId, itemsForRequisition);
 
         // Calculate total from items if not provided
         if (!validatedData.totalAmount && validatedData.items.length > 0) {

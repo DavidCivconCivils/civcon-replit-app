@@ -1,0 +1,958 @@
+<?php
+// Procon 24/7 Local Business Schema for FluentSnippets
+// This returns the schema array - FluentSnippets handles the JSON-LD output automatically
+
+$schema = [
+    "@context" => "https://schema.org",
+    "@type" => "HomeAndConstructionBusiness",
+    "name" => "Procon 24/7 Limited",
+    "alternateName" => "Procon 24/7",
+    "description" => "Leading concrete supplier in Yorkshire and North West England specializing in 24/7 volumetric concrete mixing, ready-mix delivery, and commercial construction services. BSI Kitemark certified with comprehensive project support for residential, commercial, and industrial applications.",
+    "url" => "https://proconcrete247.co.uk",
+    "logo" => "https://proconcrete247.co.uk/wp-content/uploads/Procon-logo-transparent.webp",
+    "image" => "https://proconcrete247.co.uk/wp-content/uploads/Procon-logo-transparent.webp",
+    
+    "contactPoint" => [
+        "@type" => "ContactPoint",
+        "telephone" => "+44-800-001-6147",
+        "email" => "info@procon247.co.uk",
+        "contactType" => "customer service",
+        "availableLanguage" => "English"
+    ],
+    
+    "address" => [
+        "@type" => "PostalAddress",
+        "streetAddress" => "Unit 1 Colonels Walk",
+        "addressLocality" => "Castleford",
+        "addressRegion" => "West Yorkshire",
+        "postalCode" => "WF8 4GX",
+        "addressCountry" => "GB"
+    ],
+    
+    "location" => [
+        [
+            "@type" => "Place",
+            "name" => "Yorkshire Head Office",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "Unit 1 Colonels Walk",
+                "addressLocality" => "Castleford", 
+                "addressRegion" => "West Yorkshire",
+                "postalCode" => "WF8 4GX",
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.695043,
+                "longitude" => -1.314948
+            ]
+        ],
+        [
+            "@type" => "Place",
+            "name" => "North West Operating Depot",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "Parkside Road",
+                "addressLocality" => "Warrington",
+                "addressRegion" => "Cheshire",
+                "postalCode" => "WA3 1PG", 
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.4543523002329,
+                "longitude" => -2.5988275750541314
+            ]
+        ],
+        [
+            "@type" => "Place",
+            "name" => "Yorkshire Operating Depot",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "13 Carlisle Road",
+                "addressLocality" => "Leeds",
+                "addressRegion" => "West Yorkshire", 
+                "postalCode" => "LS10 1LB",
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.78912692256163,
+                "longitude" => -1.5318790461680425
+            ]
+        ]
+    ],
+    
+    "geo" => [
+        "@type" => "GeoCoordinates",
+        "latitude" => 53.695043,
+        "longitude" => -1.314948
+    ],
+    
+    "areaServed" => [
+        [
+            "@type" => "State",
+            "name" => "Yorkshire",
+            "containsPlace" => [
+                ["@type" => "City", "name" => "Leeds"],
+                ["@type" => "City", "name" => "Bradford"],
+                ["@type" => "City", "name" => "Sheffield"],
+                ["@type" => "City", "name" => "York"],
+                ["@type" => "City", "name" => "Wakefield"],
+                ["@type" => "City", "name" => "Harrogate"],
+                ["@type" => "City", "name" => "Doncaster"],
+                ["@type" => "City", "name" => "Huddersfield"],
+                ["@type" => "City", "name" => "Halifax"],
+                ["@type" => "City", "name" => "Rotherham"],
+                ["@type" => "City", "name" => "Barnsley"],
+                ["@type" => "City", "name" => "Dewsbury"],
+                ["@type" => "City", "name" => "Keighley"],
+                ["@type" => "City", "name" => "Castleford"],
+                ["@type" => "City", "name" => "Pontefract"],
+                ["@type" => "City", "name" => "Brighouse"],
+                ["@type" => "City", "name" => "Batley"],
+                ["@type" => "City", "name" => "Morley"],
+                ["@type" => "City", "name" => "Ossett"],
+                ["@type" => "City", "name" => "Featherstone"],
+                ["@type" => "City", "name" => "Hemsworth"],
+                ["@type" => "City", "name" => "Knottingley"],
+                ["@type" => "City", "name" => "Normanton"],
+                ["@type" => "City", "name" => "South Elmsall"],
+                ["@type" => "City", "name" => "Askern"],
+                ["@type" => "City", "name" => "Mexborough"],
+                ["@type" => "City", "name" => "Swinton"],
+                ["@type" => "City", "name" => "Thurnscoe"],
+                ["@type" => "City", "name" => "Penistone"],
+                ["@type" => "City", "name" => "Stainforth"],
+                ["@type" => "City", "name" => "Thorne"],
+                ["@type" => "City", "name" => "Crowle"],
+                ["@type" => "City", "name" => "Goole"],
+                ["@type" => "City", "name" => "Snaith"],
+                ["@type" => "City", "name" => "Selby"],
+                ["@type" => "City", "name" => "Tadcaster"],
+                ["@type" => "City", "name" => "Wetherby"],
+                ["@type" => "City", "name" => "Knaresborough"],
+                ["@type" => "City", "name" => "Ripon"],
+                ["@type" => "City", "name" => "Skipton"],
+                ["@type" => "City", "name" => "Ilkley"],
+                ["@type" => "City", "name" => "Hebden Bridge"],
+                ["@type" => "City", "name" => "Todmorden"],
+                ["@type" => "City", "name" => "Holmfirth"],
+                ["@type" => "City", "name" => "Kirkburton"],
+                ["@type" => "City", "name" => "Scarborough"],
+                ["@type" => "City", "name" => "Bridlington"],
+                ["@type" => "City", "name" => "Whitby"],
+                ["@type" => "City", "name" => "Pickering"],
+                ["@type" => "City", "name" => "Malton"],
+                ["@type" => "City", "name" => "Driffield"],
+                ["@type" => "City", "name" => "Beverley"],
+                ["@type" => "City", "name" => "Pocklington"],
+                ["@type" => "City", "name" => "Richmond"],
+                ["@type" => "City", "name" => "Eggborough"],
+                ["@type" => "City", "name" => "Hatfield"],
+                ["@type" => "City", "name" => "Notmanton"]
+            ]
+        ],
+        [
+            "@type" => "State", 
+            "name" => "North West England",
+            "containsPlace" => [
+                ["@type" => "City", "name" => "Manchester"],
+                ["@type" => "City", "name" => "Liverpool"],
+                ["@type" => "City", "name" => "Preston"],
+                ["@type" => "City", "name" => "Warrington"],
+                ["@type" => "City", "name" => "Bolton"],
+                ["@type" => "City", "name" => "Salford"],
+                ["@type" => "City", "name" => "Wigan"],
+                ["@type" => "City", "name" => "St Helens"],
+                ["@type" => "City", "name" => "Stockport"],
+                ["@type" => "City", "name" => "Blackpool"],
+                ["@type" => "City", "name" => "Blackburn"],
+                ["@type" => "City", "name" => "Rochdale"],
+                ["@type" => "City", "name" => "Oldham"],
+                ["@type" => "City", "name" => "Bury"],
+                ["@type" => "City", "name" => "Burnley"],
+                ["@type" => "City", "name" => "Lancaster"],
+                ["@type" => "City", "name" => "Southport"],
+                ["@type" => "City", "name" => "Chorley"],
+                ["@type" => "City", "name" => "Birkenhead"],
+                ["@type" => "City", "name" => "Macclesfield"],
+                ["@type" => "City", "name" => "Lytham St Annes"],
+                ["@type" => "City", "name" => "Leyland"],
+                ["@type" => "City", "name" => "Ormskirk"],
+                ["@type" => "City", "name" => "Kirkby"],
+                ["@type" => "City", "name" => "Nelson"],
+                ["@type" => "City", "name" => "Fleetwood"],
+                ["@type" => "City", "name" => "Wythenshawe"]
+            ]
+        ]
+    ],
+    
+    "serviceArea" => [
+        "@type" => "GeoCircle",
+        "geoMidpoint" => [
+            "@type" => "GeoCoordinates",
+            "latitude" => 53.695043,
+            "longitude" => -1.314948
+        ],
+        "geoRadius" => "100000"
+    ],
+    
+    "openingHours" => "Mo-Su 00:00-23:59",
+    "openingHoursSpecification" => [
+        "@type" => "OpeningHoursSpecification",
+        "dayOfWeek" => [
+            "Monday", "Tuesday", "Wednesday", "Thursday", 
+            "Friday", "Saturday", "Sunday"
+        ],
+        "opens" => "00:00",
+        "closes" => "23:59"
+    ],
+    
+    "foundingDate" => "2020-06",
+    "slogan" => "Home of Volumetric & Ready Mix Concrete",
+    "legalName" => "Procon 24/7 Limited",
+    "duns" => "12697842",
+    "vatID" => "GB12697842",
+    
+    "sameAs" => [
+        "https://uk.linkedin.com/company/procon-24-7",
+        "https://www.yell.com/biz/procon-24-7-ltd-leeds-10421391/",
+        "https://find-and-update.company-information.service.gov.uk/company/12697842",
+        "https://uk.trustpilot.com/review/proconcrete.co.uk"
+    ],
+    
+    "hasOfferCatalog" => [
+        "@type" => "OfferCatalog",
+        "name" => "Concrete Supply Services",
+        "itemListElement" => [
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Volumetric Concrete Mixing",
+                    "description" => "On-site concrete mixing with pay-only-for-what-you-use pricing",
+                    "serviceType" => "Concrete Production"
+                ]
+            ],
+            [
+                "@type" => "Offer", 
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Ready Mix Concrete Delivery",
+                    "description" => "High-quality ready-mix concrete delivery from Leeds batching plant",
+                    "serviceType" => "Concrete Delivery"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service", 
+                    "name" => "24/7 Emergency Concrete",
+                    "description" => "Round-the-clock concrete delivery for emergency and out-of-hours projects",
+                    "serviceType" => "Emergency Services"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Concrete Pumping Services", 
+                    "description" => "Professional concrete pumping for challenging access locations",
+                    "serviceType" => "Concrete Pumping"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Specialized Concrete Grades",
+                    "description" => "C7/8 through C40/50 concrete grades, fiber-reinforced, rapid-setting, and decorative options",
+                    "serviceType" => "Concrete Materials Supply"
+                ],
+                "priceCurrency" => "GBP",
+                "availability" => "https://schema.org/InStock"
+            ]
+        ]
+    ],
+    
+    "makesOffer" => [
+        [
+            "@type" => "Offer",
+            "name" => "Commercial Concrete Supply",
+            "description" => "Large-scale concrete supply for commercial construction projects",
+            "category" => "Commercial Services"
+        ],
+        [
+            "@type" => "Offer", 
+            "name" => "Residential Concrete Solutions",
+            "description" => "Domestic concrete supply including driveways, foundations, and extensions",
+            "category" => "Residential Services"
+        ],
+        [
+            "@type" => "Offer",
+            "name" => "Industrial Concrete Projects", 
+            "description" => "Specialized concrete solutions for industrial and infrastructure projects",
+            "category" => "Industrial Services"
+        ]
+    ],
+    
+    "hasCredential" => [
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "BSI Kitemark BS8500 Certification",
+            "description" => "British Standards Institution certification for concrete quality and compliance"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential", 
+            "name" => "Constructionline Gold Membership",
+            "description" => "Gold level membership demonstrating construction industry competence"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "Acclaim Accreditation", 
+            "description" => "Industry recognition for professional construction services"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "QSRMC Compliance",
+            "description" => "Quality Scheme for Ready Mixed Concrete certification"
+        ]
+    ],
+    
+    "award" => [
+        "BSI Kitemark Certification",
+        "Constructionline Gold Status",
+        "Trustpilot 5-Star Rating"
+    ],
+    
+    "aggregateRating" => [
+        "@type" => "AggregateRating",
+        "ratingValue" => 4.8,
+        "reviewCount" => 100,
+        "bestRating" => 5,
+        "worstRating" => 1,
+        "ratingExplanation" => "Based on 100+ verified customer reviews on Trustpilot"
+    ],
+    
+    "review" => [
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Sarah from RS Civils"
+            ],
+            "reviewBody" => "Awesome again!!! last minute job and procon pulled it out the bag for us again 👍",
+            "datePublished" => "2025-06-03"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Karl from KDE Ltd"
+            ],
+            "reviewBody" => "Smooth service from start to finish, arrived on time and very helpful during the pour, I would recommend to others",
+            "datePublished" => "2025-05-06"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Joy Plant Ltd"
+            ],
+            "reviewBody" => "Great lads. Managed to squeeze into a busy hospital car park. No dramas.",
+            "datePublished" => "2025-03-01"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Elle"
+            ],
+            "reviewBody" => "Just want to say a big thanks to these guys and girls. Prompt reliable service. Great communication which is unusual for concrete firms. Normally we are sat hours waiting ringing up for information on when the concrete will arrive. Not so with procon. Reece has been a leg end from initial contact to delivery and driver arrival. Richard on the pump great guy, helpful and clean. Matt on the mega mixer all polite professional and courteous. Top job procon 24/7. Mucho appreciated",
+            "datePublished" => "2024-07-11"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Ashlea Developments York Ltd"
+            ],
+            "reviewBody" => "First class service from start to finish! Ordering was quick and easy, with great availability, with a driver/operator who was extremely helpful. The project involved the concrete backfill of a large waste treatment plant, and he was happy to provide his own advice and move the vehicle to ensure it was backfilled evenly. We will definitely use Procon 24/7 again!",
+            "datePublished" => "2022-07-24"
+        ]
+    ],
+    
+    "paymentAccepted" => [
+        "Cash", 
+        "Credit Card",
+        "Debit Card", 
+        "Bank Transfer",
+        "Invoice"
+    ],
+    
+    "currenciesAccepted" => "GBP",
+    "priceRange" => "$",
+    
+    "knowsAbout" => [
+        "Concrete mixing and delivery",
+        "Construction materials supply", 
+        "BS 8500 concrete standards",
+        "Volumetric concrete technology",
+        "Commercial construction support",
+        "Emergency concrete services",
+        "Yorkshire and North West construction market"
+    ],
+    
+    "parentOrganization" => [
+        "@type" => "Organization",
+        "name" => "UK Construction Industry",
+        "url" => "https://www.gov.uk/government/organisations/department-for-business-and-trade"
+    ],
+    
+    "memberOf" => [
+        [
+            "@type" => "Organization",
+            "name" => "Constructionline",
+            "url" => "https://www.constructionline.co.uk"
+        ],
+        [
+            "@type" => "Organization", 
+            "name" => "British Standards Institution",
+            "url" => "https://www.bsigroup.com"
+        ]
+    ],
+    
+    "additionalProperty" => [
+        [
+            "@type" => "PropertyValue",
+            "name" => "Service Radius",
+            "value" => "100km from multiple depot locations"
+        ],
+        [
+            "@type" => "PropertyValue", 
+            "name" => "Daily Production Capacity",
+            "value" => "300m³ ready-mix concrete"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Fleet Capacity", 
+            "value" => "Up to 10m³ volumetric mixers"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Concrete Grades Available",
+            "value" => "C7/8 through C40/50"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Emergency Response Time",
+            "value" => "Same day/next day delivery"
+        ]
+    ],
+    
+    "keywords" => "concrete supplier Yorkshire, ready mix concrete North West, 24/7 concrete delivery, volumetric concrete mixing, BSI certified concrete, Leeds concrete supplier, Manchester concrete delivery, Liverpool concrete supply, Warrington concrete, Sheffield concrete, Bradford concrete, Halifax concrete, Huddersfield concrete, Wakefield concrete, York concrete, Harrogate concrete, Doncaster concrete, Preston concrete, Bolton concrete, Blackpool concrete, construction materials Yorkshire, emergency concrete services, commercial concrete supply, domestic concrete delivery, concrete pumping services, fiber reinforced concrete, foamed concrete, screed services, interlocking concrete blocks"
+];
+
+return $schema;
+    "@context" => "https://schema.org",
+    "@type" => "HomeAndConstructionBusiness",
+    "name" => "Procon 24/7 Limited",
+    "alternateName" => "Procon 24/7",
+    "description" => "Leading concrete supplier in Yorkshire and North West England specializing in 24/7 volumetric concrete mixing, ready-mix delivery, and commercial construction services. BSI Kitemark certified with comprehensive project support for residential, commercial, and industrial applications.",
+    "url" => "https://proconcrete247.co.uk",
+    "logo" => "https://proconcrete247.co.uk/wp-content/uploads/Procon-logo-transparent.webp",
+    "image" => "https://proconcrete247.co.uk/wp-content/uploads/Procon-logo-transparent.webp",
+    
+    "contactPoint" => [
+        "@type" => "ContactPoint",
+        "telephone" => "+44-800-001-6147",
+        "email" => "info@procon247.co.uk",
+        "contactType" => "customer service",
+        "availableLanguage" => "English"
+    ],
+    
+    "address" => [
+        "@type" => "PostalAddress",
+        "streetAddress" => "Unit 1 Colonels Walk",
+        "addressLocality" => "Castleford",
+        "addressRegion" => "West Yorkshire",
+        "postalCode" => "WF8 4GX",
+        "addressCountry" => "GB"
+    ],
+    
+    "location" => [
+        [
+            "@type" => "Place",
+            "name" => "Yorkshire Head Office",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "Unit 1 Colonels Walk",
+                "addressLocality" => "Castleford", 
+                "addressRegion" => "West Yorkshire",
+                "postalCode" => "WF8 4GX",
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.695043,
+                "longitude" => -1.314948
+            ]
+        ],
+        [
+            "@type" => "Place",
+            "name" => "North West Operating Depot",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "Parkside Road",
+                "addressLocality" => "Warrington",
+                "addressRegion" => "Cheshire",
+                "postalCode" => "WA3 1PG", 
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.4543523002329,
+                "longitude" => -2.5988275750541314
+            ]
+        ],
+        [
+            "@type" => "Place",
+            "name" => "Yorkshire Operating Depot",
+            "address" => [
+                "@type" => "PostalAddress",
+                "streetAddress" => "13 Carlisle Road",
+                "addressLocality" => "Leeds",
+                "addressRegion" => "West Yorkshire", 
+                "postalCode" => "LS10 1LB",
+                "addressCountry" => "GB"
+            ],
+            "geo" => [
+                "@type" => "GeoCoordinates",
+                "latitude" => 53.78912692256163,
+                "longitude" => -1.5318790461680425
+            ]
+        ]
+    ],
+    
+    "geo" => [
+        "@type" => "GeoCoordinates",
+        "latitude" => 53.695043,
+        "longitude" => -1.314948
+    ],
+    
+    "areaServed" => [
+        [
+            "@type" => "State",
+            "name" => "Yorkshire",
+            "containsPlace" => [
+                ["@type" => "City", "name" => "Leeds"],
+                ["@type" => "City", "name" => "Bradford"],
+                ["@type" => "City", "name" => "Sheffield"],
+                ["@type" => "City", "name" => "York"],
+                ["@type" => "City", "name" => "Wakefield"],
+                ["@type" => "City", "name" => "Harrogate"],
+                ["@type" => "City", "name" => "Doncaster"],
+                ["@type" => "City", "name" => "Huddersfield"],
+                ["@type" => "City", "name" => "Halifax"],
+                ["@type" => "City", "name" => "Rotherham"],
+                ["@type" => "City", "name" => "Barnsley"],
+                ["@type" => "City", "name" => "Dewsbury"],
+                ["@type" => "City", "name" => "Keighley"],
+                ["@type" => "City", "name" => "Castleford"],
+                ["@type" => "City", "name" => "Pontefract"],
+                ["@type" => "City", "name" => "Brighouse"],
+                ["@type" => "City", "name" => "Batley"],
+                ["@type" => "City", "name" => "Morley"],
+                ["@type" => "City", "name" => "Ossett"],
+                ["@type" => "City", "name" => "Featherstone"],
+                ["@type" => "City", "name" => "Hemsworth"],
+                ["@type" => "City", "name" => "Knottingley"],
+                ["@type" => "City", "name" => "Normanton"],
+                ["@type" => "City", "name" => "South Elmsall"],
+                ["@type" => "City", "name" => "Askern"],
+                ["@type" => "City", "name" => "Mexborough"],
+                ["@type" => "City", "name" => "Swinton"],
+                ["@type" => "City", "name" => "Thurnscoe"],
+                ["@type" => "City", "name" => "Penistone"],
+                ["@type" => "City", "name" => "Stainforth"],
+                ["@type" => "City", "name" => "Thorne"],
+                ["@type" => "City", "name" => "Crowle"],
+                ["@type" => "City", "name" => "Goole"],
+                ["@type" => "City", "name" => "Snaith"],
+                ["@type" => "City", "name" => "Selby"],
+                ["@type" => "City", "name" => "Tadcaster"],
+                ["@type" => "City", "name" => "Wetherby"],
+                ["@type" => "City", "name" => "Knaresborough"],
+                ["@type" => "City", "name" => "Ripon"],
+                ["@type" => "City", "name" => "Skipton"],
+                ["@type" => "City", "name" => "Ilkley"],
+                ["@type" => "City", "name" => "Hebden Bridge"],
+                ["@type" => "City", "name" => "Todmorden"],
+                ["@type" => "City", "name" => "Holmfirth"],
+                ["@type" => "City", "name" => "Kirkburton"],
+                ["@type" => "City", "name" => "Scarborough"],
+                ["@type" => "City", "name" => "Bridlington"],
+                ["@type" => "City", "name" => "Whitby"],
+                ["@type" => "City", "name" => "Pickering"],
+                ["@type" => "City", "name" => "Malton"],
+                ["@type" => "City", "name" => "Driffield"],
+                ["@type" => "City", "name" => "Beverley"],
+                ["@type" => "City", "name" => "Pocklington"],
+                ["@type" => "City", "name" => "Richmond"],
+                ["@type" => "City", "name" => "Eggborough"],
+                ["@type" => "City", "name" => "Hatfield"],
+                ["@type" => "City", "name" => "Notmanton"]
+            ]
+        ],
+        [
+            "@type" => "State", 
+            "name" => "North West England",
+            "containsPlace" => [
+                ["@type" => "City", "name" => "Manchester"],
+                ["@type" => "City", "name" => "Liverpool"],
+                ["@type" => "City", "name" => "Preston"],
+                ["@type" => "City", "name" => "Warrington"],
+                ["@type" => "City", "name" => "Bolton"],
+                ["@type" => "City", "name" => "Salford"],
+                ["@type" => "City", "name" => "Wigan"],
+                ["@type" => "City", "name" => "St Helens"],
+                ["@type" => "City", "name" => "Stockport"],
+                ["@type" => "City", "name" => "Blackpool"],
+                ["@type" => "City", "name" => "Blackburn"],
+                ["@type" => "City", "name" => "Rochdale"],
+                ["@type" => "City", "name" => "Oldham"],
+                ["@type" => "City", "name" => "Bury"],
+                ["@type" => "City", "name" => "Burnley"],
+                ["@type" => "City", "name" => "Lancaster"],
+                ["@type" => "City", "name" => "Southport"],
+                ["@type" => "City", "name" => "Chorley"],
+                ["@type" => "City", "name" => "Birkenhead"],
+                ["@type" => "City", "name" => "Macclesfield"],
+                ["@type" => "City", "name" => "Lytham St Annes"],
+                ["@type" => "City", "name" => "Leyland"],
+                ["@type" => "City", "name" => "Ormskirk"],
+                ["@type" => "City", "name" => "Kirkby"],
+                ["@type" => "City", "name" => "Nelson"],
+                ["@type" => "City", "name" => "Fleetwood"],
+                ["@type" => "City", "name" => "Wythenshawe"]
+            ]
+        ]
+    ],
+    
+    "serviceArea" => [
+        "@type" => "GeoCircle",
+        "geoMidpoint" => [
+            "@type" => "GeoCoordinates",
+            "latitude" => 53.695043,
+            "longitude" => -1.314948
+        ],
+        "geoRadius" => "100000"
+    ],
+    
+    "openingHours" => "Mo-Su 00:00-23:59",
+    "openingHoursSpecification" => [
+        "@type" => "OpeningHoursSpecification",
+        "dayOfWeek" => [
+            "Monday", "Tuesday", "Wednesday", "Thursday", 
+            "Friday", "Saturday", "Sunday"
+        ],
+        "opens" => "00:00",
+        "closes" => "23:59"
+    ],
+    
+    "foundingDate" => "2020-06",
+    "slogan" => "Home of Volumetric & Ready Mix Concrete",
+    "legalName" => "Procon 24/7 Limited",
+    "duns" => "12697842",
+    "vatID" => "GB12697842",
+    
+    "sameAs" => [
+        "https://uk.linkedin.com/company/procon-24-7",
+        "https://www.yell.com/biz/procon-24-7-ltd-leeds-10421391/",
+        "https://find-and-update.company-information.service.gov.uk/company/12697842",
+        "https://uk.trustpilot.com/review/proconcrete.co.uk"
+    ],
+    
+    "hasOfferCatalog" => [
+        "@type" => "OfferCatalog",
+        "name" => "Concrete Supply Services",
+        "itemListElement" => [
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Volumetric Concrete Mixing",
+                    "description" => "On-site concrete mixing with pay-only-for-what-you-use pricing",
+                    "serviceType" => "Concrete Production"
+                ]
+            ],
+            [
+                "@type" => "Offer", 
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Ready Mix Concrete Delivery",
+                    "description" => "High-quality ready-mix concrete delivery from Leeds batching plant",
+                    "serviceType" => "Concrete Delivery"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service", 
+                    "name" => "24/7 Emergency Concrete",
+                    "description" => "Round-the-clock concrete delivery for emergency and out-of-hours projects",
+                    "serviceType" => "Emergency Services"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Concrete Pumping Services", 
+                    "description" => "Professional concrete pumping for challenging access locations",
+                    "serviceType" => "Concrete Pumping"
+                ]
+            ],
+            [
+                "@type" => "Offer",
+                "itemOffered" => [
+                    "@type" => "Service",
+                    "name" => "Specialized Concrete Grades",
+                    "description" => "C7/8 through C40/50 concrete grades, fiber-reinforced, rapid-setting, and decorative options",
+                    "serviceType" => "Concrete Materials Supply"
+                ],
+                "priceCurrency" => "GBP",
+                "availability" => "https://schema.org/InStock"
+            ]
+        ]
+    ],
+    
+    "makesOffer" => [
+        [
+            "@type" => "Offer",
+            "name" => "Commercial Concrete Supply",
+            "description" => "Large-scale concrete supply for commercial construction projects",
+            "category" => "Commercial Services"
+        ],
+        [
+            "@type" => "Offer", 
+            "name" => "Residential Concrete Solutions",
+            "description" => "Domestic concrete supply including driveways, foundations, and extensions",
+            "category" => "Residential Services"
+        ],
+        [
+            "@type" => "Offer",
+            "name" => "Industrial Concrete Projects", 
+            "description" => "Specialized concrete solutions for industrial and infrastructure projects",
+            "category" => "Industrial Services"
+        ]
+    ],
+    
+    "hasCredential" => [
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "BSI Kitemark BS8500 Certification",
+            "description" => "British Standards Institution certification for concrete quality and compliance"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential", 
+            "name" => "Constructionline Gold Membership",
+            "description" => "Gold level membership demonstrating construction industry competence"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "Acclaim Accreditation", 
+            "description" => "Industry recognition for professional construction services"
+        ],
+        [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => "QSRMC Compliance",
+            "description" => "Quality Scheme for Ready Mixed Concrete certification"
+        ]
+    ],
+    
+    "award" => [
+        "BSI Kitemark Certification",
+        "Constructionline Gold Status",
+        "Trustpilot 5-Star Rating"
+    ],
+    
+    "aggregateRating" => [
+        "@type" => "AggregateRating",
+        "ratingValue" => 4.8,
+        "reviewCount" => 100,
+        "bestRating" => 5,
+        "worstRating" => 1,
+        "ratingExplanation" => "Based on 100+ verified customer reviews on Trustpilot"
+    ],
+    
+    "review" => [
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Sarah from RS Civils"
+            ],
+            "reviewBody" => "Awesome again!!! last minute job and procon pulled it out the bag for us again 👍",
+            "datePublished" => "2025-06-03"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Karl from KDE Ltd"
+            ],
+            "reviewBody" => "Smooth service from start to finish, arrived on time and very helpful during the pour, I would recommend to others",
+            "datePublished" => "2025-05-06"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Joy Plant Ltd"
+            ],
+            "reviewBody" => "Great lads. Managed to squeeze into a busy hospital car park. No dramas.",
+            "datePublished" => "2025-03-01"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Elle"
+            ],
+            "reviewBody" => "Just want to say a big thanks to these guys and girls. Prompt reliable service. Great communication which is unusual for concrete firms. Normally we are sat hours waiting ringing up for information on when the concrete will arrive. Not so with procon. Reece has been a leg end from initial contact to delivery and driver arrival. Richard on the pump great guy, helpful and clean. Matt on the mega mixer all polite professional and courteous. Top job procon 24/7. Mucho appreciated",
+            "datePublished" => "2024-07-11"
+        ],
+        [
+            "@type" => "Review",
+            "reviewRating" => [
+                "@type" => "Rating", 
+                "ratingValue" => 5,
+                "bestRating" => 5
+            ],
+            "author" => [
+                "@type" => "Person",
+                "name" => "Ashlea Developments York Ltd"
+            ],
+            "reviewBody" => "First class service from start to finish! Ordering was quick and easy, with great availability, with a driver/operator who was extremely helpful. The project involved the concrete backfill of a large waste treatment plant, and he was happy to provide his own advice and move the vehicle to ensure it was backfilled evenly. We will definitely use Procon 24/7 again!",
+            "datePublished" => "2022-07-24"
+        ]
+    ],
+    
+    "paymentAccepted" => [
+        "Cash", 
+        "Credit Card",
+        "Debit Card", 
+        "Bank Transfer",
+        "Invoice"
+    ],
+    
+    "currenciesAccepted" => "GBP",
+    "priceRange" => "$$",
+    
+    "knowsAbout" => [
+        "Concrete mixing and delivery",
+        "Construction materials supply", 
+        "BS 8500 concrete standards",
+        "Volumetric concrete technology",
+        "Commercial construction support",
+        "Emergency concrete services",
+        "Yorkshire and North West construction market"
+    ],
+    
+    "parentOrganization" => [
+        "@type" => "Organization",
+        "name" => "UK Construction Industry",
+        "url" => "https://www.gov.uk/government/organisations/department-for-business-and-trade"
+    ],
+    
+    "memberOf" => [
+        [
+            "@type" => "Organization",
+            "name" => "Constructionline",
+            "url" => "https://www.constructionline.co.uk"
+        ],
+        [
+            "@type" => "Organization", 
+            "name" => "British Standards Institution",
+            "url" => "https://www.bsigroup.com"
+        ]
+    ],
+    
+    "additionalProperty" => [
+        [
+            "@type" => "PropertyValue",
+            "name" => "Service Radius",
+            "value" => "100km from multiple depot locations"
+        ],
+        [
+            "@type" => "PropertyValue", 
+            "name" => "Daily Production Capacity",
+            "value" => "300m³ ready-mix concrete"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Fleet Capacity", 
+            "value" => "Up to 10m³ volumetric mixers"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Concrete Grades Available",
+            "value" => "C7/8 through C40/50"
+        ],
+        [
+            "@type" => "PropertyValue",
+            "name" => "Emergency Response Time",
+            "value" => "Same day/next day delivery"
+        ]
+    ],
+    
+    "keywords" => "concrete supplier Yorkshire, ready mix concrete North West, 24/7 concrete delivery, volumetric concrete mixing, BSI certified concrete, Leeds concrete supplier, Manchester concrete delivery, Liverpool concrete supply, Warrington concrete, Sheffield concrete, Bradford concrete, Halifax concrete, Huddersfield concrete, Wakefield concrete, York concrete, Harrogate concrete, Doncaster concrete, Preston concrete, Bolton concrete, Blackpool concrete, construction materials Yorkshire, emergency concrete services, commercial concrete supply, domestic concrete delivery, concrete pumping services, fiber reinforced concrete, foamed concrete, screed services, interlocking concrete blocks"
+];
+?>

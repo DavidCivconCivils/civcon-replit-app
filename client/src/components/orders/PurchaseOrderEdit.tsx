@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { PurchaseOrder, Project, Supplier, User, RequisitionItem } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Save, X, Plus, Trash2 } from "lucide-react";
-import { useFieldArray } from "react-hook-form";
+import type { Project, Supplier } from "@shared/schema";
 
 const purchaseOrderEditSchema = z.object({
   poNumber: z.string().min(1, "PO number is required"),
@@ -41,21 +38,13 @@ interface PurchaseOrderEditProps {
 
 export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: PurchaseOrderEditProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch purchase order details
-  const { data: orderData, isLoading: isLoadingOrder } = useQuery({
+  const { data: orderData, isLoading } = useQuery({
     queryKey: ['/api/purchase-orders', purchaseOrderId],
-    queryFn: async () => {
-      const response = await fetch(`/api/purchase-orders/${purchaseOrderId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchase order');
-      }
-      return response.json();
-    },
   });
 
-  // Fetch supporting data
+  // Fetch reference data
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
@@ -110,18 +99,22 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
         issueDate: data.issueDate,
         status: data.status,
         totalAmount: totalAmount.toFixed(2),
-        items: data.items,
+        items: data.items.map(item => ({
+          ...item,
+          unitPrice: item.unitPrice.toString(),
+          totalPrice: (item.quantity * item.unitPrice).toFixed(2),
+        })),
       };
       
       return apiRequest(`/api/purchase-orders/${purchaseOrderId}`, 'PUT', updateData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders', purchaseOrderId] });
       toast({
         title: "Success",
         description: "Purchase order updated successfully",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/purchase-orders', purchaseOrderId] });
       onClose();
     },
     onError: (error: Error) => {
@@ -137,11 +130,10 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
     updatePurchaseOrderMutation.mutate(data);
   };
 
-  if (isLoadingOrder) {
+  if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent"></div>
-        <p className="mt-2 text-neutral-textLight">Loading purchase order...</p>
+        <p className="text-neutral-textLight">Loading purchase order...</p>
       </div>
     );
   }
@@ -157,34 +149,33 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
   const project = orderData.project;
   const supplier = orderData.supplier;
   const requisition = orderData.requisition;
-  const items = orderData.items || [];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Edit Purchase Order</h2>
-          <p className="text-neutral-textLight">
-            Editing PO #{orderData.poNumber} for Requisition #{requisition?.requisitionNumber}
-          </p>
+    <Form {...form}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Edit Purchase Order</h2>
+            <p className="text-neutral-textLight">
+              Editing PO #{orderData.poNumber} for Requisition #{requisition?.requisitionNumber}
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Purchase Order Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Purchase Order Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Purchase Order Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Purchase Order Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
                   name="poNumber"
@@ -248,218 +239,217 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
                     )}
                   </p>
                 </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={updatePurchaseOrderMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    {updatePurchaseOrderMutation.isPending ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    Save Changes
-                  </Button>
-                  <Button type="button" variant="outline" onClick={onClose}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-
-        {/* Related Information */}
-        <div className="space-y-6">
-          {/* Project Information */}
-          {project && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div>
-                  <Label className="text-sm font-medium">Project Name</Label>
-                  <p className="text-sm text-neutral-textLight">{project.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Contract Number</Label>
-                  <p className="text-sm text-neutral-textLight">{project.contractNumber}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Status</Label>
-                  <p className="text-sm text-neutral-textLight capitalize">{project.status}</p>
-                </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Supplier Information */}
-          {supplier && (
+            {/* Related Information */}
+            <div className="space-y-6">
+              {/* Project Information */}
+              {project && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <Label className="text-sm font-medium">Project Name</Label>
+                      <p className="text-sm text-neutral-textLight">{project.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Contract Number</Label>
+                      <p className="text-sm text-neutral-textLight">{project.contractNumber}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Status</Label>
+                      <p className="text-sm text-neutral-textLight capitalize">{project.status}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Supplier Information */}
+              {supplier && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Supplier Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <Label className="text-sm font-medium">Supplier Name</Label>
+                      <p className="text-sm text-neutral-textLight">{supplier.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Contact Person</Label>
+                      <p className="text-sm text-neutral-textLight">{supplier.contactPerson}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Email</Label>
+                      <p className="text-sm text-neutral-textLight">{supplier.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Phone</Label>
+                      <p className="text-sm text-neutral-textLight">{supplier.phone}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Editable Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                Edit Items
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ description: "", quantity: 1, unit: "", unitPrice: 0 })}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fields.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-neutral-textLight">No items added yet. Click "Add Item" to start.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                      <div className="md:col-span-2">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Item description" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantity</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="number" min="1" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unit`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Unit</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="e.g., each, kg, m" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unitPrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Unit Price</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="number" step="0.01" min="0" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Delivery Information */}
+          {requisition && (
             <Card>
               <CardHeader>
-                <CardTitle>Supplier Information</CardTitle>
+                <CardTitle>Delivery Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div>
-                  <Label className="text-sm font-medium">Name</Label>
-                  <p className="text-sm text-neutral-textLight">{supplier.name}</p>
+                  <Label className="text-sm font-medium">Delivery Date</Label>
+                  <p className="text-sm text-neutral-textLight">
+                    {formatDate(requisition.deliveryDate)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Address</Label>
-                  <p className="text-sm text-neutral-textLight">{supplier.address}</p>
+                  <Label className="text-sm font-medium">Delivery Address</Label>
+                  <p className="text-sm text-neutral-textLight">{requisition.deliveryAddress}</p>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Email</Label>
-                  <p className="text-sm text-neutral-textLight">{supplier.email}</p>
-                </div>
-                {supplier.phone && (
+                {requisition.deliveryInstructions && (
                   <div>
-                    <Label className="text-sm font-medium">Phone</Label>
-                    <p className="text-sm text-neutral-textLight">{supplier.phone}</p>
+                    <Label className="text-sm font-medium">Delivery Instructions</Label>
+                    <p className="text-sm text-neutral-textLight">{requisition.deliveryInstructions}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
-        </div>
-      </div>
 
-      {/* Editable Items */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            Edit Items
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => append({ description: "", quantity: 1, unit: "", unitPrice: 0 })}
+          {/* Form Actions */}
+          <div className="flex gap-2 pt-4">
+            <Button 
+              type="submit" 
+              disabled={updatePurchaseOrderMutation.isPending}
+              className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Item
+              {updatePurchaseOrderMutation.isPending ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Changes
             </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {fields.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-neutral-textLight">No items added yet. Click "Add Item" to start.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
-                  <div className="md:col-span-2">
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.description`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Item description" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.quantity`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Quantity</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" min="1" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.unit`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unit</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="e.g., each, kg, m" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.unitPrice`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unit Price</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="number" step="0.01" min="0" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delivery Information */}
-      {requisition && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Delivery Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <Label className="text-sm font-medium">Delivery Date</Label>
-              <p className="text-sm text-neutral-textLight">
-                {formatDate(requisition.deliveryDate)}
-              </p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Delivery Address</Label>
-              <p className="text-sm text-neutral-textLight">{requisition.deliveryAddress}</p>
-            </div>
-            {requisition.deliveryInstructions && (
-              <div>
-                <Label className="text-sm font-medium">Delivery Instructions</Label>
-                <p className="text-sm text-neutral-textLight">{requisition.deliveryInstructions}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </Form>
   );
 }
