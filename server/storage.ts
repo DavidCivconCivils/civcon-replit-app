@@ -74,6 +74,7 @@ export interface IStorage {
   getPurchaseOrders(): Promise<PurchaseOrder[]>;
   getPurchaseOrder(id: number): Promise<PurchaseOrder | undefined>;
   createPurchaseOrder(purchaseOrder: InsertPurchaseOrder): Promise<PurchaseOrder>;
+  updatePurchaseOrder(id: number, purchaseOrder: Partial<InsertPurchaseOrder>): Promise<PurchaseOrder | undefined>;
   getPurchaseOrderByRequisition(requisitionId: number): Promise<PurchaseOrder | undefined>;
   
   // Report operations
@@ -389,6 +390,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(requisitions.id, purchaseOrderData.requisitionId));
       
     return newPurchaseOrder;
+  }
+
+  async updatePurchaseOrder(id: number, purchaseOrderData: Partial<InsertPurchaseOrder>): Promise<PurchaseOrder | undefined> {
+    const [updatedPurchaseOrder] = await db
+      .update(purchaseOrders)
+      .set({
+        ...purchaseOrderData,
+        updatedAt: new Date()
+      })
+      .where(eq(purchaseOrders.id, id))
+      .returning();
+    return updatedPurchaseOrder;
   }
 
   async getPurchaseOrderByRequisition(requisitionId: number): Promise<PurchaseOrder | undefined> {

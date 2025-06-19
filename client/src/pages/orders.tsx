@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { PurchaseOrder, Requisition, Project, Supplier } from "@shared/schema";
 import PurchaseOrderForm from "@/components/orders/PurchaseOrderForm";
 import PurchaseOrderPreview from "@/components/orders/PurchaseOrderPreview";
+import PurchaseOrderEdit from "@/components/orders/PurchaseOrderEdit";
 import RequisitionApprovalDialog from "@/components/requisitions/RequisitionApprovalDialog";
 import RequisitionViewEdit from "@/components/requisitions/RequisitionViewEdit";
 import { Button } from "@/components/ui/button";

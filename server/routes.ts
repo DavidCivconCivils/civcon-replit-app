@@ -1292,6 +1292,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update purchase order
+  app.put('/api/purchase-orders/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid purchase order ID" });
+      }
+
+      // Check if user is finance or admin
+      if (req.user.role !== 'admin' && req.user.role !== 'finance') {
+        return res.status(403).json({ message: "Only admin and finance users can update purchase orders" });
+      }
+
+      // Validate the request body
+      const updateSchema = z.object({
+        poNumber: z.string().min(1).optional(),
+        issueDate: z.string().optional(),
+        status: z.enum(["draft", "issued", "received", "cancelled"]).optional(),
+        totalAmount: z.string().optional(),
+      });
+
+      const validatedData = updateSchema.parse(req.body);
+
+      // Get existing purchase order
+      const existingOrder = await storage.getPurchaseOrder(id);
+      if (!existingOrder) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+
+      // Update the purchase order
+      const updatedOrder = await storage.updatePurchaseOrder(id, validatedData);
+      if (!updatedOrder) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+
+      res.json(updatedOrder);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error updating purchase order:", error);
+      res.status(500).json({ message: "Failed to update purchase order" });
+    }
+  });
+
   // Reports routes
   app.get('/api/reports/project-expenditures', isAuthenticated, async (_req, res) => {
     try {
