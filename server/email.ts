@@ -19,14 +19,22 @@ let transporter: nodemailer.Transporter;
 // Initialize transporter
 function getTransporter() {
   if (!transporter) {
+    // Get email configuration from environment variables or use defaults
+    const emailUser = process.env.EMAIL_USER || 'procurement@civconcivils.co.uk';
+    const emailPass = process.env.EMAIL_PASS || 'civcon.2134';
+    const smtpHost = process.env.SMTP_HOST || 'smtp.office365.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    
+    console.log(`Configuring email transport: ${emailUser}@${smtpHost}:${smtpPort}`);
+    
     // Office 365 SMTP configuration
     transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
+      host: smtpHost,
+      port: smtpPort,
       secure: false, // TLS requires secure to be false
       auth: {
-        user: 'procurement@civconcivils.co.uk',
-        pass: 'civcon.2134'
+        user: emailUser,
+        pass: emailPass
       },
       tls: {
         ciphers: 'SSLv3',
@@ -34,7 +42,7 @@ function getTransporter() {
       }
     });
     
-    console.log('Office 365 email transport configured');
+    console.log('Email transport configured successfully');
   }
   
   return transporter;
@@ -49,10 +57,17 @@ export async function sendEmail(options: EmailOptions): Promise<{success: boolea
       ...options
     };
     
+    console.log(`Attempting to send email to: ${options.to}, CC: ${options.cc || 'none'}, Subject: ${options.subject}`);
+    
     const info = await transport.sendMail(mailOptions);
     
+    console.log(`Email sent successfully - Message ID: ${info.messageId}`);
+    console.log(`Email accepted by: ${info.accepted?.join(', ') || 'unknown'}`);
+    if (info.rejected && info.rejected.length > 0) {
+      console.log(`Email rejected by: ${info.rejected.join(', ')}`);
+    }
+    
     if (process.env.NODE_ENV === 'development') {
-      console.log('Email sent: %s', info.messageId);
       // Check if preview URL is available for test accounts
       if (info.messageId && info.envelope && (info as any).testAccount) {
         console.log('Preview URL: %s', (info as any).previewUrl);
@@ -62,10 +77,18 @@ export async function sendEmail(options: EmailOptions): Promise<{success: boolea
     return { success: true };
   } catch (error) {
     console.error('Error sending email:', error);
+    if (error instanceof Error) {
+      console.error('Email error details:', {
+        message: error.message,
+        code: (error as any).code,
+        command: (error as any).command
+      });
+    }
+    
     // Return error information instead of throwing
     return { 
       success: false, 
-      error 
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }
