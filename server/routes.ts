@@ -1311,6 +1311,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         issueDate: z.string().optional(),
         status: z.enum(["draft", "issued", "received", "cancelled"]).optional(),
         totalAmount: z.string().optional(),
+        items: z.array(z.object({
+          id: z.number().optional(),
+          description: z.string().min(1),
+          quantity: z.coerce.number().int().positive(),
+          unit: z.string().min(1),
+          unitPrice: z.coerce.number().positive(),
+        })).optional(),
       });
 
       const validatedData = updateSchema.parse(req.body);
@@ -1321,8 +1328,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Purchase order not found" });
       }
 
-      // Update the purchase order
-      const updatedOrder = await storage.updatePurchaseOrder(id, validatedData);
+      // If items are being updated, handle requisition items update
+      if (validatedData.items) {
+        // Get the purchase order to find related requisition
+        const purchaseOrder = await storage.getPurchaseOrder(id);
+        if (!purchaseOrder) {
+          return res.status(404).json({ message: "Purchase order not found" });
+        }
+
+        // Update requisition items
+        await storage.deleteRequisitionItems(purchaseOrder.requisitionId);
+        await storage.createRequisitionItems(purchaseOrder.requisitionId, validatedData.items);
+
+        // Calculate total from items if not provided
+        if (!validatedData.totalAmount && validatedData.items.length > 0) {
+          const total = validatedData.items.reduce((sum, item) => {
+            return sum + (item.quantity * item.unitPrice);
+          }, 0);
+          validatedData.totalAmount = total.toFixed(2);
+        }
+
+        // Also update the related requisition's total
+        await storage.updateRequisition(purchaseOrder.requisitionId, {
+          totalAmount: validatedData.totalAmount
+        });
+      }
+
+      // Update the purchase order (excluding items from the data)
+      const { items, ...purchaseOrderData } = validatedData;
+      const updatedOrder = await storage.updatePurchaseOrder(id, purchaseOrderData);
       if (!updatedOrder) {
         return res.status(404).json({ message: "Purchase order not found" });
       }
