@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Requisition, Project, Supplier, RequisitionItem, insertRequisitionSchema, insertRequisitionItemSchema } from "@shared/schema";
@@ -23,10 +23,14 @@ interface RequisitionViewEditProps {
   allowEdit?: boolean;
 }
 
-const requisitionEditSchema = insertRequisitionSchema.extend({
-  items: z.array(insertRequisitionItemSchema.extend({
-    quantity: z.coerce.number().int().positive()
-  }))
+const requisitionEditSchema = insertRequisitionSchema.omit({ totalAmount: true }).extend({
+  items: z.array(z.object({
+    id: z.number().optional(),
+    description: z.string().min(1, "Description is required"),
+    quantity: z.coerce.number().int().positive("Quantity must be positive"),
+    unit: z.string().min(1, "Unit is required"),
+    unitPrice: z.coerce.number().positive("Unit price must be positive"),
+  })).min(1, "At least one item is required")
 });
 
 type RequisitionEditValues = z.infer<typeof requisitionEditSchema>;
@@ -77,9 +81,13 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
       deliveryDate: "",
       deliveryAddress: "",
       deliveryInstructions: "",
-      totalAmount: "0.00",
       items: []
     }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items"
   });
 
   // Update form when requisition data loads
@@ -92,15 +100,12 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
         deliveryDate: requisition.deliveryDate,
         deliveryAddress: requisition.deliveryAddress,
         deliveryInstructions: requisition.deliveryInstructions || "",
-        totalAmount: requisition.totalAmount,
         items: items.map(item => ({
+          id: item.id,
           description: item.description,
           quantity: item.quantity,
           unit: item.unit,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-          vatType: item.vatType || "VAT 20%",
-          vatAmount: item.vatAmount || "0.00"
+          unitPrice: parseFloat(item.unitPrice.toString())
         }))
       });
     }
@@ -109,21 +114,36 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
   // Update requisition mutation
   const updateRequisitionMutation = useMutation({
     mutationFn: async (data: RequisitionEditValues) => {
-      const res = await apiRequest("PUT", `/api/requisitions/${requisitionId}`, data);
-      return res.json();
+      // Calculate total amount from items
+      const totalAmount = data.items.reduce((sum, item) => {
+        return sum + (item.quantity * item.unitPrice);
+      }, 0);
+      
+      const updateData = {
+        ...data,
+        totalAmount: totalAmount.toFixed(2),
+        items: data.items.map(item => ({
+          ...item,
+          unitPrice: item.unitPrice.toString(),
+          totalPrice: (item.quantity * item.unitPrice).toFixed(2),
+        })),
+      };
+      
+      return apiRequest(`/api/requisitions/${requisitionId}`, 'PUT', updateData);
     },
     onSuccess: () => {
       toast({
-        title: "Requisition updated",
-        description: "The requisition has been successfully updated.",
+        title: "Success",
+        description: "Requisition updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/requisitions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId] });
       setIsEditing(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Update failed",
-        description: error.message || "Failed to update requisition.",
+        title: "Error",
+        description: error.message || "Failed to update requisition",
         variant: "destructive",
       });
     },
