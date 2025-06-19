@@ -343,7 +343,7 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
                 <FormItem>
                   <FormLabel>Delivery Instructions</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="Enter delivery instructions" />
+                    <Textarea {...field} value={field.value || ""} placeholder="Enter delivery instructions" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

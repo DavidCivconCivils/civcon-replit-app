@@ -19,7 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export default function Orders() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("requisitions");
+  const [activeTab, setActiveTab] = useState("pending");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
