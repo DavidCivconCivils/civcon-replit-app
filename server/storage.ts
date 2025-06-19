@@ -291,38 +291,34 @@ export class DatabaseStorage implements IStorage {
       const requisitionNumber = `REQ-${year}-${sequence.toString().padStart(4, '0')}`;
       console.log('Generated requisition number:', requisitionNumber);
       
-      // Start a transaction
-      return await db.transaction(async (tx) => {
-        console.log('Starting database transaction');
-        
-        // Insert requisition
-        const [newRequisition] = await tx
-          .insert(requisitions)
-          .values({
-            ...requisitionData,
-            requisitionNumber
-          })
-          .returning();
-        
-        console.log('Requisition inserted with ID:', newRequisition.id);
-        
-        // Insert requisition items
-        if (items.length > 0) {
-          console.log('Inserting requisition items');
-          await tx
-            .insert(requisitionItems)
-            .values(
-              items.map(item => ({
-                ...item,
-                requisitionId: newRequisition.id
-              }))
-            );
-          console.log('Requisition items inserted successfully');
-        }
-        
-        console.log('Transaction completed successfully');
-        return newRequisition;
-      });
+      // Insert requisition (no transaction support in neon-http)
+      console.log('Inserting requisition');
+      const [newRequisition] = await db
+        .insert(requisitions)
+        .values({
+          ...requisitionData,
+          requisitionNumber
+        })
+        .returning();
+      
+      console.log('Requisition inserted with ID:', newRequisition.id);
+      
+      // Insert requisition items
+      if (items.length > 0) {
+        console.log('Inserting requisition items');
+        await db
+          .insert(requisitionItems)
+          .values(
+            items.map(item => ({
+              ...item,
+              requisitionId: newRequisition.id
+            }))
+          );
+        console.log('Requisition items inserted successfully');
+      }
+      
+      console.log('Requisition creation completed successfully');
+      return newRequisition;
     } catch (error) {
       console.error('Error in createRequisition:', error);
       console.error('Error details:', {
