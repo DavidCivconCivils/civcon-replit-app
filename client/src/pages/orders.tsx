@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { Filter, Search, Eye, Printer, Mail, CheckCircle } from "lucide-react";
+import { Filter, Search, Eye, Edit, Mail, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -28,6 +28,8 @@ export default function Orders() {
   const [isRequisitionPreviewOpen, setIsRequisitionPreviewOpen] = useState(false);
   const [requisitionToApprove, setRequisitionToApprove] = useState<number | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [editPurchaseOrderId, setEditPurchaseOrderId] = useState<number | null>(null);
+  const [isPurchaseOrderEditOpen, setIsPurchaseOrderEditOpen] = useState(false);
 
   // Check if user is finance or admin
   const isFinanceOrAdmin = user?.role === 'admin' || user?.role === 'finance';
@@ -161,6 +163,17 @@ export default function Orders() {
     setRequisitionToApprove(null);
   };
 
+  // Handle edit purchase order
+  const handleEditPurchaseOrder = (orderId: number) => {
+    setEditPurchaseOrderId(orderId);
+    setIsPurchaseOrderEditOpen(true);
+  };
+
+  const handleClosePurchaseOrderEdit = () => {
+    setIsPurchaseOrderEditOpen(false);
+    setEditPurchaseOrderId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -175,7 +188,7 @@ export default function Orders() {
           <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
           
           {/* Finance/Admin can see all pending requisitions */}
-          {isFinanceOrAdmin && pendingRequisitions.length > 0 && (
+          {isFinanceOrAdmin && (
             <TabsTrigger value="pending">
               Requisitions to Process
               <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
@@ -263,15 +276,16 @@ export default function Orders() {
                             >
                               <Eye size={16} />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-primary hover:text-primary-dark"
-                              onClick={() => generatePdfMutation.mutate(order.id)}
-                              disabled={generatePdfMutation.isPending}
-                            >
-                              <Printer size={16} />
-                            </Button>
+                            {isFinanceOrAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary hover:text-primary-dark"
+                                onClick={() => handleEditPurchaseOrder(order.id)}
+                              >
+                                <Edit size={16} />
+                              </Button>
+                            )}
                             {isFinanceOrAdmin && (
                               <Button 
                                 variant="ghost" 
@@ -491,6 +505,21 @@ export default function Orders() {
               requisitionId={selectedRequisition} 
               onClose={handleCloseRequisitionPreview}
               allowEdit={isFinanceOrAdmin}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Purchase Order Edit Dialog */}
+      <Dialog open={isPurchaseOrderEditOpen} onOpenChange={setIsPurchaseOrderEditOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+          </DialogHeader>
+          {editPurchaseOrderId && (
+            <PurchaseOrderEdit 
+              purchaseOrderId={editPurchaseOrderId} 
+              onClose={handleClosePurchaseOrderEdit}
             />
           )}
         </DialogContent>
