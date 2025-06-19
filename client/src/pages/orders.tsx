@@ -4,7 +4,7 @@ import { PurchaseOrder, Requisition, Project, Supplier } from "@shared/schema";
 import PurchaseOrderForm from "@/components/orders/PurchaseOrderForm";
 import PurchaseOrderPreview from "@/components/orders/PurchaseOrderPreview";
 import RequisitionApprovalDialog from "@/components/requisitions/RequisitionApprovalDialog";
-import RequisitionPreview from "@/components/requisitions/RequisitionPreview";
+import RequisitionViewEdit from "@/components/requisitions/RequisitionViewEdit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -479,6 +479,22 @@ export default function Orders() {
         onClose={handleCloseApprovalDialog} 
         requisitionId={requisitionToApprove} 
       />
+
+      {/* Requisition Preview Dialog */}
+      <Dialog open={isRequisitionPreviewOpen} onOpenChange={setIsRequisitionPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Requisition Details</DialogTitle>
+          </DialogHeader>
+          {selectedRequisition && (
+            <RequisitionViewEdit 
+              requisitionId={selectedRequisition} 
+              onClose={handleCloseRequisitionPreview}
+              allowEdit={isFinanceOrAdmin}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

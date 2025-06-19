@@ -724,6 +724,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update requisition (full update for finance/admin)
+  app.put('/api/requisitions/:id', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid requisition ID" });
+      }
+
+      // Check if user has permission to edit requisitions
+      const userRole = req.user.role;
+      if (userRole !== 'admin' && userRole !== 'finance') {
+        return res.status(403).json({ message: "Insufficient permissions to edit requisitions" });
+      }
+
+      // Validate requisition data
+      const requisitionSchema = insertRequisitionSchema.extend({
+        items: z.array(insertRequisitionItemSchema.extend({
+          quantity: z.coerce.number().int().positive()
+        }))
+      });
+
+      const { items, ...requisitionData } = requisitionSchema.parse(req.body);
+
+      // Check if requisition exists
+      const existingRequisition = await storage.getRequisition(id);
+      if (!existingRequisition) {
+        return res.status(404).json({ message: "Requisition not found" });
+      }
+
+      // Update the requisition
+      const updatedRequisition = await storage.updateRequisition(id, requisitionData);
+      if (!updatedRequisition) {
+        return res.status(404).json({ message: "Failed to update requisition" });
+      }
+
+      // Delete existing items and insert new ones
+      await storage.deleteRequisitionItems(id);
+      if (items.length > 0) {
+        await storage.createRequisitionItems(id, items);
+      }
+
+      // Return updated requisition
+      res.json(updatedRequisition);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error updating requisition:", error);
+      res.status(500).json({ message: "Failed to update requisition" });
+    }
+  });
+
   app.put('/api/requisitions/:id/status', isAuthenticated, async (req: any, res: Response) => {
     try {
       const id = parseInt(req.params.id);

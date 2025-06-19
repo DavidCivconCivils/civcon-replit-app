@@ -67,6 +67,8 @@ export interface IStorage {
   createRequisition(requisition: InsertRequisition, items: InsertRequisitionItem[]): Promise<Requisition>;
   updateRequisition(id: number, requisition: Partial<InsertRequisition>): Promise<Requisition | undefined>;
   getRequisitionItems(requisitionId: number): Promise<RequisitionItem[]>;
+  createRequisitionItems(requisitionId: number, items: InsertRequisitionItem[]): Promise<void>;
+  deleteRequisitionItems(requisitionId: number): Promise<void>;
   
   // Purchase Order operations
   getPurchaseOrders(): Promise<PurchaseOrder[]>;
@@ -323,6 +325,25 @@ export class DatabaseStorage implements IStorage {
       .from(requisitionItems)
       .where(eq(requisitionItems.requisitionId, requisitionId))
       .orderBy(requisitionItems.id);
+  }
+
+  async createRequisitionItems(requisitionId: number, items: InsertRequisitionItem[]): Promise<void> {
+    if (items.length > 0) {
+      await db
+        .insert(requisitionItems)
+        .values(
+          items.map(item => ({
+            ...item,
+            requisitionId
+          }))
+        );
+    }
+  }
+
+  async deleteRequisitionItems(requisitionId: number): Promise<void> {
+    await db
+      .delete(requisitionItems)
+      .where(eq(requisitionItems.requisitionId, requisitionId));
   }
 
   // Purchase Order operations
