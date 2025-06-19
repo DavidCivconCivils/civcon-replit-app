@@ -113,11 +113,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       delete userData.confirmPassword;
       
       // Update the user
+      console.log('Updating user with data:', { ...userData, password: userData.password ? '[REDACTED]' : undefined });
       const updatedUser = await storage.updateUser(userId, userData);
       
       if (!updatedUser) {
+        console.error('Failed to update user - no user returned from storage');
         return res.status(500).json({ message: "Failed to update user" });
       }
+      
+      console.log('User updated successfully:', updatedUser.id);
       
       // Don't send password back to client
       const { password, ...userWithoutPassword } = updatedUser;

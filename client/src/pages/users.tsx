@@ -50,44 +50,30 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// Create separate schemas for creating and editing users
-const createUserSchema = z.object({
+// Form schema for user editing
+const userFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().min(1, { message: "Last name is required" }),
   role: z.enum(["admin", "finance", "requester"], {
     required_error: "Please select a role",
   }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-const editUserSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  role: z.enum(["admin", "finance", "requester"], {
-    required_error: "Please select a role",
-  }),
-  password: z.string().optional().refine(value => !value || value.length >= 6, {
-    message: "Password must be at least 6 characters",
-  }),
+  password: z.string().optional(),
   confirmPassword: z.string().optional(),
 }).refine(data => {
+  // If password is provided, it must be at least 6 characters
+  if (data.password && data.password.length > 0 && data.password.length < 6) {
+    return false;
+  }
+  // If password is provided, confirmPassword must match
   if (data.password && data.password.length > 0) {
     return data.password === data.confirmPassword;
   }
   return true;
 }, {
-  message: "Passwords do not match",
+  message: "Password must be at least 6 characters and passwords must match",
   path: ["confirmPassword"],
 });
-
-// Use union type for form values
-const userFormSchema = z.union([createUserSchema, editUserSchema]);
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
