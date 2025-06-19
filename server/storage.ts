@@ -275,59 +275,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRequisition(requisitionData: InsertRequisition, items: InsertRequisitionItem[]): Promise<Requisition> {
-    try {
-      console.log('Creating requisition with data:', requisitionData);
-      console.log('Items to insert:', items);
-      
-      // Generate requisition number: REQ-YYYY-XXXX
-      const year = new Date().getFullYear();
-      console.log('Generating requisition number for year:', year);
-      
-      const [{ max }] = await db.select({
-        max: sql<string>`MAX(SUBSTRING(${requisitions.requisitionNumber} FROM '[0-9]+$')::integer)`
-      }).from(requisitions).where(sql`${requisitions.requisitionNumber} LIKE ${'REQ-' + year + '-%'}`);
-      
-      const sequence = max ? parseInt(max) + 1 : 1;
-      const requisitionNumber = `REQ-${year}-${sequence.toString().padStart(4, '0')}`;
-      console.log('Generated requisition number:', requisitionNumber);
-      
-      // Insert requisition (no transaction support in neon-http)
-      console.log('Inserting requisition');
-      const [newRequisition] = await db
-        .insert(requisitions)
-        .values({
-          ...requisitionData,
-          requisitionNumber
-        })
-        .returning();
-      
-      console.log('Requisition inserted with ID:', newRequisition.id);
-      
-      // Insert requisition items
-      if (items.length > 0) {
-        console.log('Inserting requisition items');
-        await db
-          .insert(requisitionItems)
-          .values(
-            items.map(item => ({
-              ...item,
-              requisitionId: newRequisition.id
-            }))
-          );
-        console.log('Requisition items inserted successfully');
-      }
-      
-      console.log('Requisition creation completed successfully');
-      return newRequisition;
-    } catch (error) {
-      console.error('Error in createRequisition:', error);
-      console.error('Error details:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : 'No stack trace'
-      });
-      throw error;
+    // Generate requisition number: REQ-YYYY-XXXX
+    const year = new Date().getFullYear();
+    const [{ max }] = await db.select({
+      max: sql<string>`MAX(SUBSTRING(${requisitions.requisitionNumber} FROM '[0-9]+$')::integer)`
+    }).from(requisitions).where(sql`${requisitions.requisitionNumber} LIKE ${'REQ-' + year + '-%'}`);
+    
+    const sequence = max ? parseInt(max) + 1 : 1;
+    const requisitionNumber = `REQ-${year}-${sequence.toString().padStart(4, '0')}`;
+    
+    // Insert requisition (no transaction support in neon-http)
+    const [newRequisition] = await db
+      .insert(requisitions)
+      .values({
+        ...requisitionData,
+        requisitionNumber
+      })
+      .returning();
+    
+    // Insert requisition items
+    if (items.length > 0) {
+      await db
+        .insert(requisitionItems)
+        .values(
+          items.map(item => ({
+            ...item,
+            requisitionId: newRequisition.id
+          }))
+        );
     }
+    
+    return newRequisition;
   }
 
   async updateRequisition(id: number, requisitionData: Partial<InsertRequisition>): Promise<Requisition | undefined> {

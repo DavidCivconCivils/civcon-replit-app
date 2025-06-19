@@ -690,7 +690,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get user ID properly (session-based auth doesn't have claims.sub)
       const userId = req.user.id;
-      console.log('Creating requisition for user:', userId);
       
       // Validate requisition data
       const requisitionSchema = insertRequisitionSchema.extend({
@@ -706,76 +705,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create the requisition
-      console.log('About to create requisition with data:', { 
-        ...requisitionData, 
-        itemsCount: items.length 
-      });
       const requisition = await storage.createRequisition(requisitionData, items);
-      console.log('Requisition created successfully:', requisition.id);
       
-      // Automatically send email notification to procurement team
-      try {
-        // Get all required data for email
-        const project = await storage.getProject(requisition.projectId);
-        const supplier = await storage.getSupplier(requisition.supplierId);
-        const user = await storage.getUser(requisition.requestedById);
-        const requisitionItems = await storage.getRequisitionItems(requisition.id);
-        
-        if (project && supplier && user && requisitionItems.length > 0) {
-          // Generate PDF
-          const pdfBuffer = await generatePDF('requisition', {
-            requisition,
-            items: requisitionItems,
-            project,
-            supplier,
-            user
-          });
-          
-          // Send email to procurement and CC requester
-          const procurementEmail = 'procurement@civconcivils.co.uk';
-          const requesterEmail = user.email;
-          
-          console.log(`Auto-sending requisition email to: ${procurementEmail}, CC: ${requesterEmail}`);
-          
-          const emailResult = await sendEmail({
-            to: procurementEmail,
-            cc: requesterEmail,
-            subject: `New Purchase Requisition: ${requisition.requisitionNumber}`,
-            text: `A new purchase requisition (${requisition.requisitionNumber}) has been submitted by ${user.firstName || ''} ${user.lastName || ''} for project ${project.name}. Please review for procurement processing.`,
-            html: `
-              <h1>New Purchase Requisition</h1>
-              <p>A new purchase requisition has been submitted with the following details:</p>
-              <ul>
-                <li><strong>Requisition Number:</strong> ${requisition.requisitionNumber}</li>
-                <li><strong>Project:</strong> ${project.name} (${project.contractNumber || 'No contract number'})</li>
-                <li><strong>Supplier:</strong> ${supplier.name}</li>
-                <li><strong>Requested By:</strong> ${user.firstName || ''} ${user.lastName || ''} (${user.email})</li>
-                <li><strong>Amount:</strong> £${requisition.totalAmount}</li>
-              </ul>
-              <p>Please review this requisition for procurement processing.</p>
-              <p>For any questions, please contact Civcon Office.</p>
-            `,
-            attachments: [
-              {
-                filename: `${requisition.requisitionNumber}.pdf`,
-                content: pdfBuffer
-              }
-            ]
-          });
-          
-          if (emailResult.success) {
-            console.log('Requisition email sent successfully');
-          } else {
-            console.error('Failed to send requisition email:', emailResult.error);
-          }
-        } else {
-          console.log('Missing data for email notification - skipping email');
-        }
-      } catch (emailError) {
-        console.error('Error sending requisition email notification:', emailError);
-        // Don't fail the requisition creation if email fails
-      }
-      
+      // Return response immediately
       res.status(201).json(requisition);
     } catch (error) {
       if (error instanceof ZodError) {
