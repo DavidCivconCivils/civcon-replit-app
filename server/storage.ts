@@ -275,40 +275,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRequisition(requisitionData: InsertRequisition, items: InsertRequisitionItem[]): Promise<Requisition> {
-    // Generate requisition number: REQ-YYYY-XXXX
-    const year = new Date().getFullYear();
-    const [{ max }] = await db.select({
-      max: sql<string>`MAX(SUBSTRING(${requisitions.requisitionNumber} FROM '[0-9]+$')::integer)`
-    }).from(requisitions).where(sql`${requisitions.requisitionNumber} LIKE ${'REQ-' + year + '-%'}`);
-    
-    const sequence = max ? parseInt(max) + 1 : 1;
-    const requisitionNumber = `REQ-${year}-${sequence.toString().padStart(4, '0')}`;
-    
-    // Start a transaction
-    return await db.transaction(async (tx) => {
-      // Insert requisition
-      const [newRequisition] = await tx
-        .insert(requisitions)
-        .values({
-          ...requisitionData,
-          requisitionNumber
-        })
-        .returning();
+    try {
+      console.log('Creating requisition with data:', requisitionData);
+      console.log('Items to insert:', items);
       
-      // Insert requisition items
-      if (items.length > 0) {
-        await tx
-          .insert(requisitionItems)
-          .values(
-            items.map(item => ({
-              ...item,
-              requisitionId: newRequisition.id
-            }))
-          );
-      }
+      // Generate requisition number: REQ-YYYY-XXXX
+      const year = new Date().getFullYear();
+      console.log('Generating requisition number for year:', year);
       
-      return newRequisition;
-    });
+      const [{ max }] = await db.select({
+        max: sql<string>`MAX(SUBSTRING(${requisitions.requisitionNumber} FROM '[0-9]+$')::integer)`
+      }).from(requisitions).where(sql`${requisitions.requisitionNumber} LIKE ${'REQ-' + year + '-%'}`);
+      
+      const sequence = max ? parseInt(max) + 1 : 1;
+      const requisitionNumber = `REQ-${year}-${sequence.toString().padStart(4, '0')}`;
+      console.log('Generated requisition number:', requisitionNumber);
+      
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        console.log('Starting database transaction');
+        
+        // Insert requisition
+        const [newRequisition] = await tx
+          .insert(requisitions)
+          .values({
+            ...requisitionData,
+            requisitionNumber
+          })
+          .returning();
+        
+        console.log('Requisition inserted with ID:', newRequisition.id);
+        
+        // Insert requisition items
+        if (items.length > 0) {
+          console.log('Inserting requisition items');
+          await tx
+            .insert(requisitionItems)
+            .values(
+              items.map(item => ({
+                ...item,
+                requisitionId: newRequisition.id
+              }))
+            );
+          console.log('Requisition items inserted successfully');
+        }
+        
+        console.log('Transaction completed successfully');
+        return newRequisition;
+      });
+    } catch (error) {
+      console.error('Error in createRequisition:', error);
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      throw error;
+    }
   }
 
   async updateRequisition(id: number, requisitionData: Partial<InsertRequisition>): Promise<Requisition | undefined> {

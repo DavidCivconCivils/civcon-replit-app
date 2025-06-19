@@ -706,7 +706,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create the requisition
+      console.log('About to create requisition with data:', { 
+        ...requisitionData, 
+        itemsCount: items.length 
+      });
       const requisition = await storage.createRequisition(requisitionData, items);
+      console.log('Requisition created successfully:', requisition.id);
       
       // Automatically send email notification to procurement team
       try {
@@ -774,10 +779,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(requisition);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error("Validation error creating requisition:", fromZodError(error).message);
         return res.status(400).json({ message: fromZodError(error).message });
       }
       console.error("Error creating requisition:", error);
-      res.status(500).json({ message: "Failed to create requisition" });
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace available');
+      console.error("Request body:", JSON.stringify(req.body, null, 2));
+      res.status(500).json({ 
+        message: "Failed to create requisition", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
