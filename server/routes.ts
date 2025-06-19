@@ -98,11 +98,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let userData = { ...req.body };
       
-      // If password is provided, hash it
-      if (userData.password) {
+      // If password is provided and not empty, hash it
+      if (userData.password && userData.password.trim() !== '') {
+        console.log(`Updating password for user ${userId}`);
         userData.password = await hashPassword(userData.password);
+        console.log('Password hashed successfully');
       } else {
-        // Remove password field if it's empty
+        // Remove password field if it's empty or undefined
+        console.log(`No password update for user ${userId} - removing password field`);
         delete userData.password;
       }
       

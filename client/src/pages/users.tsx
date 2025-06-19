@@ -50,23 +50,44 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// Form schema for user editing
-const userFormSchema = z.object({
+// Create separate schemas for creating and editing users
+const createUserSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().min(1, { message: "Last name is required" }),
   role: z.enum(["admin", "finance", "requester"], {
     required_error: "Please select a role",
   }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" })
-    .optional(),
-  confirmPassword: z.string().optional(),
-}).refine(data => !data.password || data.password === data.confirmPassword, {
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
+
+const editUserSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  role: z.enum(["admin", "finance", "requester"], {
+    required_error: "Please select a role",
+  }),
+  password: z.string().optional().refine(value => !value || value.length >= 6, {
+    message: "Password must be at least 6 characters",
+  }),
+  confirmPassword: z.string().optional(),
+}).refine(data => {
+  if (data.password && data.password.length > 0) {
+    return data.password === data.confirmPassword;
+  }
+  return true;
+}, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+// Use union type for form values
+const userFormSchema = z.union([createUserSchema, editUserSchema]);
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
@@ -189,15 +210,23 @@ export default function UsersPage() {
   // Handle form submission
   const onSubmit = (data: UserFormValues) => {
     if (editingUser) {
-      // If password is empty, remove it from the data
-      if (!data.password) {
-        const { password, confirmPassword, ...restData } = data;
-        updateUserMutation.mutate({ id: editingUser.id, data: restData });
+      // Clean up the data object
+      const submitData = { ...data };
+      
+      // If password is empty or undefined, remove it and confirmPassword from the data
+      if (!submitData.password || submitData.password.trim() === '') {
+        delete submitData.password;
+        delete submitData.confirmPassword;
       } else {
-        updateUserMutation.mutate({ id: editingUser.id, data });
+        // Remove confirmPassword as it's not needed in the API call
+        delete submitData.confirmPassword;
       }
+      
+      updateUserMutation.mutate({ id: editingUser.id, data: submitData });
     } else {
-      createUserMutation.mutate(data);
+      // For new users, password is required
+      const { confirmPassword, ...submitData } = data;
+      createUserMutation.mutate(submitData);
     }
   };
 
