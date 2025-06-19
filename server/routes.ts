@@ -1106,6 +1106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all required data
       const requisition = await storage.getRequisition(purchaseOrder.requisitionId);
+      if (!requisition) {
+        return res.status(400).json({ message: "Related requisition not found" });
+      }
+      
       const project = await storage.getProject(requisition.projectId);
       const supplier = await storage.getSupplier(requisition.supplierId);
       const user = await storage.getUser(req.user.id || req.user.claims?.sub);

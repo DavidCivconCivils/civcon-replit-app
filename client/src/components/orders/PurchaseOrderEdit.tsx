@@ -70,12 +70,13 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
 
   // Populate form with purchase order data
   useEffect(() => {
-    if (orderData && orderData.items) {
+    if (orderData) {
+      const data = orderData as any;
       form.reset({
-        poNumber: orderData.poNumber || "",
-        issueDate: orderData.issueDate ? orderData.issueDate.split('T')[0] : "",
-        status: orderData.status || "draft",
-        items: orderData.items.map((item: any) => ({
+        poNumber: data.poNumber || "",
+        issueDate: data.issueDate ? data.issueDate.split('T')[0] : "",
+        status: data.status || "draft",
+        items: (data.items || []).map((item: any) => ({
           id: item.id,
           description: item.description || "",
           quantity: parseInt(item.quantity?.toString() || "0"),
@@ -146,9 +147,10 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
     );
   }
 
-  const project = orderData.project;
-  const supplier = orderData.supplier;
-  const requisition = orderData.requisition;
+  const data = orderData as any;
+  const project = data?.project;
+  const supplier = data?.supplier;
+  const requisition = data?.requisition;
 
   return (
     <Form {...form}>
@@ -158,7 +160,7 @@ export default function PurchaseOrderEdit({ purchaseOrderId, onClose }: Purchase
           <div>
             <h2 className="text-2xl font-bold">Edit Purchase Order</h2>
             <p className="text-neutral-textLight">
-              Editing PO #{orderData.poNumber} for Requisition #{requisition?.requisitionNumber}
+              Editing PO #{data?.poNumber || 'Unknown'} for Requisition #{requisition?.requisitionNumber || 'Unknown'}
             </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
