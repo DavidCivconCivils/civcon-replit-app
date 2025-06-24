@@ -106,13 +106,31 @@ export default function Requisitions() {
     queryFn: async () => {
       if (!selectedRequisition) return null;
       console.log("Fetching details for requisition ID:", selectedRequisition);
-      const response = await fetch(`/api/requisitions/${selectedRequisition}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch requisition: ${response.statusText}`);
+      
+      // Fetch requisition data and items in parallel
+      const [requisitionResponse, itemsResponse] = await Promise.all([
+        fetch(`/api/requisitions/${selectedRequisition}`, { credentials: 'include' }),
+        fetch(`/api/requisitions/${selectedRequisition}/items`, { credentials: 'include' })
+      ]);
+      
+      if (!requisitionResponse.ok) {
+        throw new Error(`Failed to fetch requisition: ${requisitionResponse.statusText}`);
       }
-      const data = await response.json();
-      console.log("Received requisition data:", data);
-      return data;
+      if (!itemsResponse.ok) {
+        throw new Error(`Failed to fetch items: ${itemsResponse.statusText}`);
+      }
+      
+      const requisitionData = await requisitionResponse.json();
+      const itemsData = await itemsResponse.json();
+      
+      // Combine requisition data with items
+      const combined = {
+        ...requisitionData,
+        items: itemsData
+      };
+      
+      console.log("Received combined requisition data with items:", combined);
+      return combined;
     },
     enabled: selectedRequisition !== null
   });
