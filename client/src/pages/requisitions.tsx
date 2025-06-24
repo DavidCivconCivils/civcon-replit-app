@@ -479,11 +479,14 @@ export default function Requisitions() {
                   <p className="mt-2 text-neutral-textLight">Loading details...</p>
                 </div>
               ) : requisitionDetails ? (
-                <RequisitionPreview 
-                  requisition={requisitionDetails} 
-                  onExportPdf={handleExportPdf}
-                  onEmail={handleEmailRequisition}
-                />
+                <>
+                  {console.log("Passing requisition data to preview:", requisitionDetails)}
+                  <RequisitionPreview 
+                    requisition={requisitionDetails} 
+                    onExportPdf={handleExportPdf}
+                    onEmail={handleEmailRequisition}
+                  />
+                </>
               ) : (
                 <p className="text-neutral-textLight">Could not load requisition details.</p>
               )}
