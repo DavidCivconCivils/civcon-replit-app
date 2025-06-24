@@ -47,6 +47,8 @@ interface RequisitionPreviewProps {
 
 export default function RequisitionPreview({ requisition, onExportPdf, onPrint, onEmail }: RequisitionPreviewProps) {
   console.log("RequisitionPreview data:", requisition);
+  console.log("Items array:", requisition?.items);
+  console.log("Items length:", requisition?.items?.length);
   
   // Return a loading state or null if requisition is undefined
   if (!requisition) {
@@ -126,7 +128,7 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-secondary">
-            {requisition.items && requisition.items.length > 0 ? requisition.items.map((item, index) => (
+            {(requisition.items && requisition.items.length > 0) ? requisition.items.map((item, index) => (
               <tr key={index}>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-neutral-text">{index + 1}</td>
                 <td className="px-4 py-2 text-sm text-neutral-text">{item.description}</td>
