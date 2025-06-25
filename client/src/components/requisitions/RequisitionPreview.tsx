@@ -155,6 +155,18 @@ export default function RequisitionPreview({ requisition, onExportPdf, onPrint, 
           <tfoot className="bg-neutral-secondary">
             {/* Calculate subtotal and VAT amounts based on items */}
             {(() => {
+              // Check if we have items to calculate from
+              if (!requisition.items || requisition.items.length === 0) {
+                return (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-2 text-sm font-medium text-right">Total Amount:</td>
+                    <td className="px-4 py-2 text-sm font-bold">
+                      {formatCurrency(parseFloat(requisition.totalAmount) || 0)}
+                    </td>
+                  </tr>
+                );
+              }
+              
               // Calculate totals
               const subtotal = requisition.items.reduce((sum, item) => {
                 const quantity = Number(item.quantity) || 0;

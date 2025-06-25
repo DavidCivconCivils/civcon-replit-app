@@ -686,6 +686,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get requisition items separately (for compatibility with RequisitionViewEdit component)
+  app.get('/api/requisitions/:id/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid requisition ID" });
+      }
+      
+      // Get the requisition first to check permissions
+      const requisition = await storage.getRequisition(id);
+      if (!requisition) {
+        return res.status(404).json({ message: "Requisition not found" });
+      }
+      
+      // Check user permission (admin/finance see all, others only see their own)
+      if (req.user.role !== 'admin' && req.user.role !== 'finance' && requisition.requestedById !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to view this requisition" });
+      }
+      
+      // Get requisition items
+      const items = await storage.getRequisitionItems(id);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching requisition items:", error);
+      res.status(500).json({ message: "Failed to fetch requisition items" });
+    }
+  });
+
   app.post('/api/requisitions', isAuthenticated, async (req: any, res) => {
     try {
       // Get user ID properly (session-based auth doesn't have claims.sub)
