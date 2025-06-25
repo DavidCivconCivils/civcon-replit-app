@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@esbuild/linux-x64": "^0.25.5",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
@@ -45,6 +46,7 @@
     "@tanstack/react-query": "^5.60.5",
     "@types/memoizee": "^0.4.12",
     "@types/nodemailer": "^6.4.17",
+    "all": "^0.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

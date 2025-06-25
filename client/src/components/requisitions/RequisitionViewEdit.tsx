@@ -39,11 +39,12 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
 
-  // Fetch requisition details
+  // Fetch requisition details with items included
   const { data: requisition, isLoading } = useQuery<Requisition & {
     project: Project;
     supplier: Supplier;
     user: { firstName: string; lastName: string; email: string };
+    items: RequisitionItem[];
   }>({
     queryKey: ['/api/requisitions', requisitionId],
     queryFn: async () => {
@@ -52,14 +53,8 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
     },
   });
 
-  // Fetch requisition items
-  const { data: items = [] } = useQuery<RequisitionItem[]>({
-    queryKey: ['/api/requisitions', requisitionId, 'items'],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/requisitions/${requisitionId}/items`);
-      return res.json();
-    },
-  });
+  // Extract items from requisition data (since they're included in the main API response)
+  const items = requisition?.items || [];
 
   // Fetch projects and suppliers for editing
   const { data: projects = [] } = useQuery<Project[]>({
@@ -129,7 +124,7 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
         })),
       };
       
-      return apiRequest(`/api/requisitions/${requisitionId}`, 'PUT', updateData);
+      return apiRequest("PUT", `/api/requisitions/${requisitionId}`, updateData);
     },
     onSuccess: () => {
       toast({
@@ -163,15 +158,12 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
         deliveryDate: requisition.deliveryDate,
         deliveryAddress: requisition.deliveryAddress,
         deliveryInstructions: requisition.deliveryInstructions || "",
-        totalAmount: requisition.totalAmount,
         items: items.map(item => ({
+          id: item.id,
           description: item.description,
           quantity: item.quantity,
           unit: item.unit,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-          vatType: item.vatType || "VAT 20%",
-          vatAmount: item.vatAmount || "0.00"
+          unitPrice: parseFloat(item.unitPrice.toString())
         }))
       });
     }
@@ -182,24 +174,16 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
   };
 
   const addItem = () => {
-    const currentItems = form.getValues("items");
-    form.setValue("items", [
-      ...currentItems,
-      {
-        description: "",
-        quantity: 1,
-        unit: "Each",
-        unitPrice: "0.00",
-        totalPrice: "0.00",
-        vatType: "VAT 20%",
-        vatAmount: "0.00"
-      }
-    ]);
+    append({
+      description: "",
+      quantity: 1,
+      unit: "Each",
+      unitPrice: 0
+    });
   };
 
   const removeItem = (index: number) => {
-    const currentItems = form.getValues("items");
-    form.setValue("items", currentItems.filter((_, i) => i !== index));
+    remove(index);
   };
 
   if (isLoading) {
@@ -394,8 +378,8 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {form.watch("items").map((_, index) => (
-                      <TableRow key={index}>
+                    {fields.map((field, index) => (
+                      <TableRow key={field.id}>
                         <TableCell>
                           <FormField
                             control={form.control}
@@ -433,18 +417,20 @@ export default function RequisitionViewEdit({ requisitionId, onClose, allowEdit 
                             control={form.control}
                             name={`items.${index}.unitPrice`}
                             render={({ field }) => (
-                              <Input {...field} className="w-24" />
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                {...field} 
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                className="w-24" 
+                              />
                             )}
                           />
                         </TableCell>
                         <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.totalPrice`}
-                            render={({ field }) => (
-                              <Input {...field} className="w-24" />
-                            )}
-                          />
+                          <span className="w-24 block text-sm">
+                            {formatCurrency((form.watch(`items.${index}.quantity`) || 0) * (form.watch(`items.${index}.unitPrice`) || 0))}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Button
